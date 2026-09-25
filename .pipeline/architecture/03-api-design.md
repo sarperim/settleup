@@ -1,6 +1,6 @@
 # API Design — Settle Up
 
-Status: ready for review · Date: 2026-09-25 · Amended: 2026-09-25 (test-planner G-1 resolution + Gate 2 decisions — see §7)
+Status: ready for review · Date: 2026-09-25 · Amended: 2026-09-25 (test-planner G-1 resolution + Gate 2 decisions; test-planner I-1/I-2/L-6 resolutions — see §7)
 Surface: JSON over HTTPS, same-origin with the SPA. Base path `/api`. All requests/responses are `application/json; charset=utf-8` unless noted.
 
 ## 1. Conventions
@@ -33,10 +33,19 @@ Surface: JSON over HTTPS, same-origin with the SPA. Base path `/api`. All reques
 | `GET /api/join-info?code=...` | Resolve a join code to `{ groupName }` before confirming (code holder only learns the name) | UC-GRP-002 (steps 1–2) | `200` `{ groupId, groupName }` | `404 CODE_NOT_FOUND` (FR-GRP-004) |
 | `POST /api/join-requests` | Place join request `{ code }` | UC-GRP-002, FR-GRP-003, BR-GRP-003 | `201` `{ joinRequest }` | `404 CODE_NOT_FOUND`, `409 ALREADY_MEMBER` (A1/FR-GRP-013), `409 PENDING_REQUEST_EXISTS` (A2/FR-GRP-012) |
 | `GET /api/groups/:groupId/join-requests` | Pending requests — **creator only** | UC-GRP-003/004 (step 1), FR-GRP-005 | `200` `{ requests: [...] }` | `404 NOT_FOUND` (non-member), `403 NOT_GROUP_CREATOR` (member, not creator) |
-| `POST /api/join-requests/:requestId/approve` | Approve → membership established, request closed | UC-GRP-003, FR-GRP-006, BR-GRP-004 | `200` `{ joinRequest }` | `403 NOT_GROUP_CREATOR`, `404 NOT_FOUND` |
-| `POST /api/join-requests/:requestId/reject` | Reject → request closed, no membership; re-request later allowed (BR-GRP-010) | UC-GRP-004, FR-GRP-007/011 | `200` `{ joinRequest }` | `403 NOT_GROUP_CREATOR`, `404 NOT_FOUND` |
+| `POST /api/join-requests/:requestId/approve` | Approve → membership established, request closed. Operates on **pending** requests only — deciding an already-decided (APPROVED/REJECTED) request → `404 NOT_FOUND` (semantics note below) | UC-GRP-003, FR-GRP-006, BR-GRP-004 | `200` `{ joinRequest }` | `403 NOT_GROUP_CREATOR` (caller is a member of the request's group but not its creator), `404 NOT_FOUND` (no row for requestId; caller not a member of the request's group — existence hiding; or request already decided) |
+| `POST /api/join-requests/:requestId/reject` | Reject → request closed, no membership; re-request later allowed (BR-GRP-010). Operates on **pending** requests only — deciding an already-decided request → `404 NOT_FOUND` (semantics note below) | UC-GRP-004, FR-GRP-007/011 | `200` `{ joinRequest }` | `403 NOT_GROUP_CREATOR` (member, not creator), `404 NOT_FOUND` (no row; non-member caller — existence hiding; or request already decided) |
 
 Re-request semantics: after a rejection, `POST /api/join-requests { code }` flips the existing row back to `PENDING` (02-data-model.md §5.3).
+
+Approve/reject semantics (added 2026-09-25 — resolves test-planner interpretations I-1/I-2, groups test plan §1): both routes act on the **pending** join request addressed by `:requestId` — UC-GRP-003/004's precondition is "a pending join request exists", FR-GRP-005's read model is pending-only, and the state machine (02-data-model.md §5.3) defines no decided→decided transition — so a decided (APPROVED or REJECTED) request is outside these routes' domain: `404 NOT_FOUND`, indistinguishable from a missing one. The routes carry no `:groupId` path segment, so the handler applies the `GroupMemberGuard` pattern itself (resolve request → its group → caller membership). Checks run in a fixed order, first match wins:
+
+1. no join-request row matches `requestId` → `404 NOT_FOUND`;
+2. caller is not a member of the request's group → `404 NOT_FOUND` (existence hiding — same 404/403 split as `GET /api/groups/:groupId/join-requests`; the requester themself is always a non-member here, FR-GRP-013, so self-approval/self-rejection falls in this class);
+3. caller is a member but not the group's creator → `403 NOT_GROUP_CREATOR`;
+4. request status ≠ PENDING → `404 NOT_FOUND`.
+
+Authorization (2–3) precedes request-state (4), mirroring the guard-before-handler layering (01-system-architecture.md §8.1); consequence: a member non-creator acting on an already-decided request receives `403`, not `404`. No new error code — §4's existing `NOT_FOUND` / `NOT_GROUP_CREATOR` rows apply unchanged.
 
 ## 3b. Endpoints — Expenses (C4)
 
@@ -110,6 +119,12 @@ Every error response has exactly this shape (NestJS exception filter; no stack t
 
 **Error precedence (added 2026-09-25):** DTO validation precedes service-level checks — a request that is both malformed and semantically conflicting returns `400 VALIDATION_FAILED`. Consequences: (a) registration with a taken email **and** other invalid fields → `400 VALIDATION_FAILED`, not `409 EMAIL_TAKEN`; (b) password change with a wrong current password **and** a policy-violating new password → `400 VALIDATION_FAILED`, not `INVALID_CURRENT_PASSWORD`. Why: validation is a pure format concern evaluated before any DB access; probing service-level state with an invalid payload is wasted work and would make the outcome order-dependent.
 
+**Service-level error precedence (added 2026-09-25 — resolves test-planner L-6):** when more than one service-level check would fail on a single request, the checks run in a **fixed order per endpoint and the first violation wins** — combined-error outcomes are contract, not implementation accident. Orders for the affected endpoints:
+
+- **Expense create** (`POST /api/groups/:groupId/expenses`, §3b): `NO_PARTICIPANTS` → `PARTICIPANT_NOT_MEMBER` → `SPLIT_SUM_MISMATCH` — participant-list shape, then payer/participant membership, then split arithmetic. Expense **edit** (`PATCH …/expenses/:expenseId`) runs the same order over its field validations, after the `NOT_LOGGER` check (authorization first — guard order).
+- **Mark paid** (`POST /api/groups/:groupId/settlements`, §3c): `NOT_PAYMENT_PARTY` → `SUGGESTION_STALE` — the caller's party status is checked before the plan is recomputed and matched (an unauthorized caller triggers no plan work). **Undo** follows the same rule: party check before `ALREADY_UNDONE`.
+- Why this order: authorization and participation (who may act, who is in the group) precede domain-state and arithmetic checks (what the numbers say) — the same layering as guards before handlers (01-system-architecture.md §8.1). DTO validation still precedes all service-level checks (note above).
+
 ## 5. Versioning
 
 **Decision: no version prefix in the MVP.** The API is a private, same-origin surface consumed exclusively by the SPA built from the same monorepo commit — client and server are always in lockstep (single deployable, 01 §1). Change policy: additive-only within the MVP; any breaking change (which would require coordination anyway) adds `/api/v2` at that time, leaving `/api` intact.
@@ -152,3 +167,10 @@ Initial API design — no existing tickets or test plans reference these endpoin
 - §4: **error precedence** note — DTO validation (`400 VALIDATION_FAILED`) precedes service-level checks (`409 EMAIL_TAKEN`, `INVALID_CURRENT_PASSWORD`) in the two collapsed cases.
 - No other status codes, success shapes, or endpoints changed.
 - Downstream: the accounts-access test plan adds **TC-ACC-031** (throttle contract) and finalizes **TC-ACC-030** (email normalization), and may add precedence TCs — notify test-planner (new assertions, no weakenings) and planner (implementation detail only, no ticket scope change).
+
+**2026-09-25 — amendment (test-planner I-1/I-2 and L-6 resolutions):**
+
+- §3 approve/reject rows + new "Approve/reject semantics" note under §3: **I-1 confirmed** — approve/reject of an already-decided (non-PENDING) request → `404 NOT_FOUND`; the routes operate on pending requests (UC-GRP-003/004 preconditions, FR-GRP-005 pending-only read model, no decided→decided transition in 02 §5.3), so a decided request is indistinguishable from a missing one. **I-2 confirmed** — caller classes: no matching row → `404`; caller not a member of the request's group → `404 NOT_FOUND` (existence hiding, mirroring the list route's documented 404/403 split); member non-creator → `403 NOT_GROUP_CREATOR`. Fixed check order: missing → non-member → non-creator → decided — authorization precedes request-state (01 §8.1 layering); this also fixes the previously unspecified combination *member non-creator + decided request* → `403` (no recorded TC contradicts it). Rejected alternatives: a dedicated already-decided error code (rejected — adds contract surface for a case the creator's UI never surfaces, since FR-GRP-005 lists pending requests only) and 200-on-re-approve idempotency (rejected — would imply a decided→decided transition that does not exist; TC-GRP-019 asserts no state change). No new error code: §4's table is reused unchanged.
+- §4: **service-level error precedence** note — first violation wins in a fixed order per endpoint: expense create `NO_PARTICIPANTS` → `PARTICIPANT_NOT_MEMBER` → `SPLIT_SUM_MISMATCH` (edit: same order after `NOT_LOGGER`); mark paid `NOT_PAYMENT_PARTY` → `SUGGESTION_STALE` (undo: party before `ALREADY_UNDONE`). The test-planner's two collapsed cases (L-6) are now contract: `PARTICIPANT_NOT_MEMBER` wins over `SPLIT_SUM_MISMATCH`; `NOT_PAYMENT_PARTY` wins over `SUGGESTION_STALE`. Rejected alternative: "unspecified by design" (all outcomes are equivalent rejections) — rejected because a deterministic contract is testable and immune to implementation-order drift, at the cost of one paragraph.
+- No endpoints, status codes, success shapes, or §4 error-table rows changed.
+- Downstream (change propagation): the test-planner must re-validate the affected TCs — **TC-GRP-018/019** (items 1–2 — both interpretations confirmed as recorded, expected cells unchanged), **TC-ACC-028** (item 3 — amended in 01 §10, not in this document), and the **expense/balances plans' §1 exclusions plus coverage-matrix rows L-4/L-6/L-7** (item 4 — the L-6 exclusion may now become specified, testable combined cases). No tickets exist yet (`.pipeline/plan/` not created), so no ticket re-validation is needed.

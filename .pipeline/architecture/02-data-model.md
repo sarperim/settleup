@@ -1,6 +1,6 @@
 # Data Model — Settle Up
 
-Status: ready for review · Date: 2026-09-25 · Amended: 2026-09-25 (test-planner G-1 resolution + Gate 2 decisions — see §11)
+Status: ready for review · Date: 2026-09-25 · Amended: 2026-09-25 (test-planner G-1 resolution + Gate 2 decisions; BR-GRP-011 reference fix — see §11)
 Implements: D-ARCH-004 (fully derived ledger state) · ASM-002 (TRY, 2 decimals) · validates ASM-002 as required by the brief ("API/data-model design review").
 
 ## 1. Principles
@@ -197,7 +197,7 @@ The Balances report defines the Settlement Record conceptually with status `outs
 
 Rejected alternative: storing outstanding rows and rewriting them on every balance change — matches the literal enum but adds write-path churn, identity instability for "mark this one paid", and races between regeneration and mark-paid, for zero user-visible benefit. **This is a deliberate reading, flagged for the test-planner: tests should treat outstanding suggestions as ephemeral API output, not as stored state.**
 
-### 5.3 Join Request re-request semantics (BR-GRP-010/011, FR-GRP-011/012)
+### 5.3 Join Request re-request semantics (BR-GRP-010, FR-GRP-011/012)
 
 One row per `(groupId, userId)`:
 - `PENDING → APPROVED` (membership created; further requests impossible — user is a member, FR-GRP-013 → 409).
@@ -286,3 +286,4 @@ Rejected alternative for the zero-sum invariant: Postgres deferred constraint tr
 - **Change propagation:** this is the initial data model; no FRs/UCs/TCs/tickets exist yet that trace to entities. If this model changes later, the affected FRs (per 01 §6) and any tests/tickets derived from them must be re-validated by test-planner and planner.
 
 - **2026-09-25 — amendment (test-planner G-1 resolution + Gate 2 user decisions):** email normalization made explicit at both boundaries (§4 schema comment, §9 invariant row) — registration lowercases at write (unchanged), and login lowercases its input before lookup (user decision, 2026-09-25), so mixed-case credentials authenticate to the same account. No entity, key, cardinality, or invariant changed. Related: the login-throttle counter keys on the same normalized email (01 §8.2). Downstream: the accounts-access test plan finalizes **TC-ACC-030** (email normalization); TC-ACC-031 (throttle) and any precedence TCs trace to the 01/03 amendments of the same date.
+- **2026-09-25 — amendment (documentation defect — dangling BR-GRP-011 reference):** §5.3's heading cited "(BR-GRP-010/011, FR-GRP-011/012)", but the groups analysis defines only BR-GRP-001…010 — re-request is **BR-GRP-010**; the stray "/011" is removed (FR-GRP-011/012 both exist and remain cited). The section body already cited BR-GRP-010 correctly; 01/02/03 contain no other occurrence of the stray reference (the coverage matrix already noted "BR-GRP-011 does not exist — numbering ends at 010"). No entity, key, cardinality, invariant, or state-machine change — §5.3's semantics are untouched, and its approve/reject surface is specified the same date in 03 §3. Downstream (change propagation): the test-planner must re-validate the affected TCs — **TC-GRP-018/019** (items 1–2 — amended in 03 §3; TC-GRP-019 traces to §5.3, whose citation is now corrected, semantics unchanged), **TC-ACC-028** (item 3 — amended in 01 §10), and the **expense/balances plans' §1 exclusions plus coverage-matrix rows L-4/L-6/L-7** (item 4 — amended in 03 §4). No tickets exist yet (`.pipeline/plan/` not created), so no ticket re-validation is needed.
