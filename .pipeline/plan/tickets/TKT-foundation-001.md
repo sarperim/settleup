@@ -1,6 +1,6 @@
 # TKT-foundation-001: Monorepo scaffolding & dependency baseline
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Create** the pnpm-workspace monorepo exactly as laid out in 01-system-architecture.md §1:
   - Root: `package.json` (workspace scripts per the 04-ci-pipeline.md §3 contract — `lint`, `typecheck`, `build` real; `test`, `test:e2e` as clearly-marked passing stubs — `test` is wired to the unit runner by TKT-foundation-007 and completed by TKT-foundation-006; `test:e2e` is replaced by TKT-foundation-006), `pnpm-workspace.yaml` (`apps/*`, `packages/*`), `tsconfig.base.json` (TypeScript strict), ESLint flat config covering all three packages, and **extend** the repo `.gitignore` (node_modules, dist, `.env`, coverage, Playwright artifacts), `apps/api/.env.example` (`DATABASE_URL`, `PORT`, `LOG_LEVEL`, `ARGON2_*` with the §7 defaults, `COOKIE_SECURE` — arch §8.5).
