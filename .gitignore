@@ -1,0 +1,3 @@
+# Pipeline plan views (regenerable — source of record is the ticket files' Status fields)
+.pipeline/plan/board.md
+.pipeline/plan/reviews/
