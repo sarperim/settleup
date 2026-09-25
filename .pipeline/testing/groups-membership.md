@@ -5,6 +5,8 @@ Domain report: `.pipeline/analysis/groups-membership.md` · Architecture: `01-sy
 
 > **Gate 2 resolution (2026-09-25):** approved as written. Interpretations I-1/I-2 (§1 — approve/reject on decided requests and non-member callers) stand as recorded, flagged for architect confirmation; if the architect amends either, TC-GRP-018/019 change one expected cell each via the change-propagation rule. No test case was weakened.
 
+> **Amendment re-validation (2026-09-25, architect rulings):** I-1 and I-2 **confirmed** by architect amendment (`03-api-design.md` §3 — "Approve/reject semantics" note; check order: missing → non-member → non-creator → decided). The expected cells of TC-GRP-018/019 are unchanged. The amendment additionally fixes a previously unspecified combination — **member non-creator acting on an already-decided request → `403 NOT_GROUP_CREATOR`** (authorization precedes request-state) — covered by a new row in TC-GRP-019 (a strengthening; no test case was weakened). The dangling BR-GRP-011 reference in `02-data-model.md` §5.3 was corrected upstream. Closes coverage-matrix L-7.
+
 **Conventions for all integration cases below** (from the strategy, identical to the accounts-access plan): every state-changing HTTP call carries `X-Requested-With: XMLHttpRequest`; the app under test boots in-process (supertest) against a real PostgreSQL; every test starts from truncated tables; the test bootstrap sets `COOKIE_SECURE=true`; fixture identities are fixed (`alice@test.local` creator, `bob@test.local` joiner, `carol@test.local` registered non-member with no memberships, `dave@test.local` member of another group; passwords `password-1`, `password-2`, …). Factories per strategy §5: `registerUser`, `createGroup` (returns group incl. `joinCode`), `joinAndApprove`, `createExpense`. **E2e conventions:** the e2e database is recreated per run; every e2e case is self-contained — it registers its own unique fixed identities through the UI as in-test setup and depends on no other e2e case (order-independent, per the Gate 2 resolution recorded in `accounts-access.md`).
 
 ## 1. Scope
@@ -24,14 +26,14 @@ Domain report: `.pipeline/analysis/groups-membership.md` · Architecture: `01-sy
 | Load testing for NFR-GRP-004 | Load is trivial by construction at 8 users × 5 groups (strategy §6) — verified functionally at full scale (TC-GRP-024), not by load test |
 | `joinCode` presence in the `GET /api/groups` overview payload | Unspecified upstream — FR-GRP-002's "whenever they view the group" is asserted on the group detail view (TC-GRP-003/006); the overview list's field set is not asserted beyond `id`/`name` |
 
-**Interpretations recorded (flagged for architect confirmation — see TC-GRP-018/019 and the coverage matrix):**
+**Interpretations recorded (confirmed by architect amendment 2026-09-25 — see TC-GRP-018/019 and the coverage matrix):**
 
 | # | Contract point | Upstream state | Interpretation used |
 |---|---|---|---|
-| I-1 | Approve/reject of an already-decided (non-PENDING) request | Unspecified — `03-api-design.md` §3 lists only `403 NOT_GROUP_CREATOR` / `404 NOT_FOUND`; the JoinRequest state machine (02 §5.3) has no decided→decided transition | **`404 NOT_FOUND`** — the routes operate on *pending* requests (UC-GRP-003/004 preconditions: "a pending join request exists"; FR-GRP-005's read model is pending-only); a decided request is outside their domain |
-| I-2 | Approve/reject by a caller who is not a member of the request's group | Unspecified — §3 lists both 403 and 404 without splitting the caller classes | **`404 NOT_FOUND`** for non-members (existence hiding, mirroring the documented 404/403 split on the list route), **`403 NOT_GROUP_CREATOR`** for members who are not the creator |
+| I-1 | Approve/reject of an already-decided (non-PENDING) request | Was unspecified at plan time — **confirmed by architect amendment 2026-09-25** (`03-api-design.md` §3, "Approve/reject semantics" note) | **`404 NOT_FOUND`** — the routes operate on *pending* requests (UC-GRP-003/004 preconditions: "a pending join request exists"; FR-GRP-005's read model is pending-only); a decided request is outside their domain |
+| I-2 | Approve/reject by a caller who is not a member of the request's group | Was unspecified at plan time — **confirmed by architect amendment 2026-09-25** (same note; fixed check order: missing → non-member → non-creator → decided) | **`404 NOT_FOUND`** for non-members (existence hiding, mirroring the documented 404/403 split on the list route), **`403 NOT_GROUP_CREATOR`** for members who are not the creator |
 
-If the architect amends either point, the affected expectation is one cell of TC-GRP-018/019 — change-propagation rule applies (no tickets exist yet; the planner and coder are notified).
+The architect amendment also specifies the previously open combination *member non-creator + decided request* → `403 NOT_GROUP_CREATOR` (authorization precedes request-state) — covered by TC-GRP-019 row c.
 
 ## 2. Test Cases
 
@@ -218,7 +220,7 @@ If the architect amends either point, the affected expectation is one cell of TC
   2. `403`, code `NOT_GROUP_CREATOR` — a member who is not the creator cannot see pending requests (the non-member case is the 404 of the authorization matrix, TC-GRP-021; anonymous is TC-ACC-015)
 
 ### TC-GRP-018 — Approve/reject authorization (decision table)
-- Traces to: FR-GRP-005/006/007 context, UC-GRP-003/004 (error side), API §3 error codes, arch. §8.1 layer 3; interpretation **I-2**
+- Traces to: FR-GRP-005/006/007 context, UC-GRP-003/004 (error side), API §3 error codes + "Approve/reject semantics" note (amended 2026-09-25), arch. §8.1 layer 3; interpretation **I-2 — confirmed by architect amendment 2026-09-25**
 - Level: integration
 - Preconditions: alice created group "Trip"; carol has a pending request; bob is a member (not creator); dave is a registered non-member of "Trip"
 - Steps (each from a clean copy of the precondition state — the pending request must still exist for each row):
@@ -233,7 +235,7 @@ If the architect amends either point, the affected expectation is one cell of TC
   4. In every row: members list unchanged (alice only) and the request remains PENDING — no failure path establishes membership or closes the request
 
 ### TC-GRP-019 — Deciding an already-decided request
-- Traces to: data-model §5.3 (JoinRequest state machine), UC-GRP-003/004 (preconditions: a *pending* request exists); interpretation **I-1**
+- Traces to: data-model §5.3 (JoinRequest state machine), UC-GRP-003/004 (preconditions: a *pending* request exists), API §3 "Approve/reject semantics" note (amended 2026-09-25); interpretation **I-1 — confirmed by architect amendment 2026-09-25**
 - Level: integration
 - Preconditions (built per row, each from a fresh decided state):
   - row a: bob's request was approved
@@ -241,8 +243,9 @@ If the architect amends either point, the affected expectation is one cell of TC
 - Steps:
   - Row a: `POST /api/join-requests/:requestId/approve` as alice again; then `.../reject` on the approved request
   - Row b: `POST /api/join-requests/:requestId/reject` as alice again; then `.../approve` on the rejected request
+  - Row c (combined case, specified by the amendment): `POST /api/join-requests/:requestId/approve` as bob (member, non-creator) on a decided request
   - After each call: read the `join_requests` row and `GET /api/groups/:groupId/members`
-- Expected result: every call → `404`, code `NOT_FOUND` (I-1: the routes operate on pending requests); the row's `status` is unchanged (APPROVED stays APPROVED, REJECTED stays REJECTED); the members list is unchanged — approving twice never duplicates membership, rejecting an approved member never removes it (BR-GRP-008)
+- Expected result: rows a and b → `404`, code `NOT_FOUND` (I-1: the routes operate on pending requests); row c → `403`, code `NOT_GROUP_CREATOR` (authorization precedes request-state — API §3 note, amended 2026-09-25); in every row the row's `status` is unchanged (APPROVED stays APPROVED, REJECTED stays REJECTED); the members list is unchanged — approving twice never duplicates membership, rejecting an approved member never removes it (BR-GRP-008)
 
 ### TC-GRP-020 — Empty pending list is a valid state
 - Traces to: FR-GRP-005, UC-GRP-003/004 (step 1 — "creator opens the pending requests")
@@ -490,5 +493,6 @@ States: `created → exists` (forever — BR-GRP-007).
 | API §1/§4 | CSRF on the 4 Groups routes; error codes `CODE_NOT_FOUND`, `ALREADY_MEMBER`, `PENDING_REQUEST_EXISTS`, `NOT_GROUP_CREATOR` | TC-022; TC-008/010, 011, 012, 017/018 | Covered |
 | Cross-domain promise (accounts-access plan) | FR-ACC-008 UI assertions | TC-028, 030 | Covered |
 | Cross-domain promise (accounts-access plan) | NFR-ACC-005 scale fixture (8 users, 5 groups) | TC-024 | Covered |
-| — | Interpretation I-1: decide-on-decided → 404 | TC-019 | Covered — **flagged for architect confirmation** (§1) |
-| — | Interpretation I-2: non-member caller on approve/reject → 404 (member non-creator → 403) | TC-018 | Covered — **flagged for architect confirmation** (§1) |
+| — | Interpretation I-1: decide-on-decided → 404 | TC-019 | Covered — **confirmed by architect amendment 2026-09-25** (API §3 note) |
+| — | Interpretation I-2: non-member caller on approve/reject → 404 (member non-creator → 403) | TC-018 | Covered — **confirmed by architect amendment 2026-09-25** (API §3 note) |
+| — | Combined case: member non-creator on a decided request → 403 (specified by the amendment) | TC-019 (row c) | Covered |

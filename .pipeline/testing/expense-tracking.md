@@ -5,6 +5,8 @@ Domain report: `.pipeline/analysis/expense-tracking.md` · Architecture: `01-sys
 
 **Conventions for all integration cases below** (from the strategy, identical to the previous plans): every state-changing HTTP call carries `X-Requested-With: XMLHttpRequest`; the app under test boots in-process (supertest) against a real PostgreSQL; every test starts from truncated tables; `COOKIE_SECURE=true`; fixed identities (`alice@test.local` group creator, `bob@test.local` and `carol@test.local` approved members, `dave@test.local` registered non-member; passwords `password-1`, …). The standing group fixture is built with the factories: `createGroup` (alice) + `joinAndApprove` (bob, carol). **Determinism of share values (strategy T5):** the split engine's CSPRNG is faked only in unit tests (seeded PRNG); at integration/e2e level the random remainder draw is asserted **structurally** (sum, per-share bounds, count of +1 shares), never as specific participant assignments. Where exact share or balance **values** must be asserted, fixtures use **exact splits or evenly dividing equal splits** — deterministic by construction. **E2e conventions:** per-run recreated database; every e2e case is self-contained with its own unique fixed identities registered through the UI.
 
+> **Amendment re-validation (2026-09-25, architect rulings):** the service-level error-precedence gap (L-6) is **resolved** — API §4 (amended) fixes the order: expense create `NO_PARTICIPANTS` → `PARTICIPANT_NOT_MEMBER` → `SPLIT_SUM_MISMATCH`; expense edit runs `NOT_LOGGER` first. The §1 exclusion was removed and the combined cases are now asserted (TC-EXP-013 step 3, TC-EXP-016 step 2) — strengthenings; no test case was weakened. Closes coverage-matrix L-6 (expense half).
+
 ## 1. Scope
 
 **Covered here:** FR-EXP-001…012 · UC-EXP-001 (main, A1, E1–E4), UC-EXP-002 (main, E1, E2), UC-EXP-003 (main, E1), UC-EXP-004 (main, E1) · NFR-EXP-001…005 · BR-EXP-001…011 · ASM-001 (random-spread remainder properties — SC-002's split-engine half) · ASM-002 / `parseKurus`/`formatKurus` (C6 money boundary) · the create/edit/delete parameters of the SC-005 zero-sum suite · NFR-EXP-004 scale (50-expense ledger) and the defensive list cap (strategy G-5) · CSRF enforcement on the three expense state-changing routes · the FR-ACC-008 UI assertions for expense views (promised by the accounts-access plan).
@@ -14,7 +16,6 @@ Domain report: `.pipeline/analysis/expense-tracking.md` · Architecture: `01-sys
 | Exclusion | Reason |
 |---|---|
 | Non-member access to expense routes (UC-EXP-001 E4, UC-EXP-004 E1) | Owned by the SC-006 authorization matrix — **TC-GRP-021** covers all 12 group-scoped routes (incl. the 5 expense routes) with existence-hiding parity; anonymous is TC-ACC-015. Cross-referenced, not duplicated |
-| Precedence among simultaneous service-level errors (e.g., an exact split whose amounts both mismatch the total **and** name a non-member participant) | Unspecified upstream (API §4 fixes only DTO-vs-service precedence). Each error is tested in isolation; combined-error outcomes are intentionally untested — all are 400s that create no expense, so no FR distinguishes them |
 | `parseKurus` behavior beyond the documented contract (leading/trailing spaces, `"+"`-prefixed input, `"123."`) | Data-model §8 enumerates the accepted and rejected forms exhaustively; unlisted forms are unspecified — not tested |
 | Money movement, receipts, recurring expenses, percentages/weighted splits, user-editable expense dates | Scope-out (brief §6, BR-EXP-003/008); the absence of a date field in the DTOs is a contract-review fact (API §3b note) |
 | Suggestion/balance **values** after expenses | Owned by the Balances & Settlement plan (this domain contributes `sumKurus === 0` after each operation — TC-EXP-023) |
@@ -146,7 +147,8 @@ Domain report: `.pipeline/analysis/expense-tracking.md` · Architecture: `01-sys
 - Steps:
   1. `POST …/expenses` with `payerId: <dave>` (participants valid)
   2. `POST …/expenses` with `participantIds` containing dave among members
-- Expected result: both → `400`, code `PARTICIPANT_NOT_MEMBER`; no expense created
+  3. `POST …/expenses` with an EXACT split whose per-participant amounts **both** sum to something other than the total **and** name dave as a participant (combined service-level violations)
+- Expected result: all three → `400`, code `PARTICIPANT_NOT_MEMBER`; no expense created. Step 3 asserts the amended precedence (API §4, 2026-09-25): the participation check runs before the split-arithmetic check — `PARTICIPANT_NOT_MEMBER` beats `SPLIT_SUM_MISMATCH`
 
 ### TC-EXP-014 — Zero amount, single participant, payer-not-participant (combined valid edges)
 - Traces to: BR-EXP-002 (payer independent of participants), BR-EXP-010, OQ-EXP-001, OQ-EXP-002
@@ -182,10 +184,12 @@ Domain report: `.pipeline/analysis/expense-tracking.md` · Architecture: `01-sys
 - Preconditions: alice logged an expense (bob is a member — even as payer or participant)
 - Steps:
   1. `PATCH …/expenses/:expenseId` as bob with `{ description: "Tampered" }`
-  2. `GET …/expenses/:expenseId` as alice
+  2. `PATCH …/expenses/:expenseId` as bob with `{ amountKurus: -1 }` (a non-logger submitting an edit that also fails validation)
+  3. `GET …/expenses/:expenseId` as alice
 - Expected result:
   1. `403`, code `NOT_LOGGER` — even a payer or participant cannot edit (BR-EXP-007)
-  2. `200` — the expense is unchanged: original description, original shares, `editedAt` still absent
+  2. `403`, code `NOT_LOGGER` — the logger check precedes field validation (API §3b/§4, amended 2026-09-25: authorization first)
+  3. `200` — the expense is unchanged: original description, original shares, `editedAt` still absent
 
 ### TC-EXP-017 — Edit that fails validation leaves the expense unchanged (E1)
 - Traces to: UC-EXP-002 (E1), FR-EXP-002/007 (edit side)
@@ -359,7 +363,7 @@ Domain report: `.pipeline/analysis/expense-tracking.md` · Architecture: `01-sys
 | ledger size | 50 (expected max) · 501 (cap + 1) | TC-024, 025 |
 
 ### Decision tables
-**Create an expense** — one violated condition per case (combined-violation precedence is unspecified upstream and intentionally untested — §1):
+**Create an expense** — one violated condition per case; combined violations follow the amended fixed order `NO_PARTICIPANTS` → `PARTICIPANT_NOT_MEMBER` → `SPLIT_SUM_MISMATCH` (API §4, 2026-09-25 — asserted by TC-013 step 3):
 
 | Condition violated | Outcome | Case |
 |---|---|---|
@@ -378,7 +382,7 @@ Domain report: `.pipeline/analysis/expense-tracking.md` · Architecture: `01-sys
 | T | T | 200; recompute iff amount/participants/splitType changed; editedAt set | TC-015 |
 | F | T | 403 NOT_LOGGER; unchanged | TC-016 |
 | T | F | 400 (validation family); unchanged, no editedAt | TC-017 |
-| F | F | 403 NOT_LOGGER (authorization precedes validation on the handler — guard order, arch. §8.1 layer 3; intentionally untested as a combined case, both are rejections) | not tested (§1) |
+| F | F | 403 NOT_LOGGER — the logger check precedes field validation (API §4, amended 2026-09-25) | TC-016 (step 2) |
 
 ### State transition testing — Expense
 States: `(none) → created → edited → deleted`.
@@ -438,4 +442,4 @@ States: `(none) → created → edited → deleted`.
 | API §3b error codes | `SPLIT_SUM_MISMATCH`, `NO_PARTICIPANTS`, `PARTICIPANT_NOT_MEMBER`, `LIST_TOO_LARGE`, `NOT_LOGGER` | TC-010, 011, 013, 025, 016/019 | Covered |
 | API §1 CSRF (expense routes) | 403 on POST/PATCH/DELETE | TC-027 | Covered |
 | Cross-domain promise (accounts-access plan) | FR-ACC-008 UI assertions (expense views) | TC-031 (+ 029/030 affordances) | Covered |
-| — | Combined service-error precedence | — | Intentionally untested (§1) — unspecified upstream |
+| — | Combined service-error precedence (API §4, amended 2026-09-25): `PARTICIPANT_NOT_MEMBER` beats `SPLIT_SUM_MISMATCH`; `NOT_LOGGER` precedes field validation | TC-013 (step 3), TC-016 (step 2) | Covered |

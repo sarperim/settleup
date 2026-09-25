@@ -5,6 +5,8 @@ Domain report: `.pipeline/analysis/accounts-access.md` · Architecture: `01-syst
 
 > **Gate 2 resolution (2026-09-25):** approved with all review findings resolved as strengthenings/clarifications — no test case was weakened. (F1) session behavior after an owner CLI password reset is unspecified upstream → recorded as a §1 exclusion; (F2) TC-ACC-030's stored-email observation point is now a direct `users`-row read; (F3) e2e TC-ACC-024…027 are self-contained (unique identities, in-test UI setup) per determinism rule 1; (nit) TC-ACC-031 asserts the 429 carries no `details` field, and TC-ACC-022 gained a `403 CSRF_HEADER_MISSING` trigger. No tickets exist yet — nothing to re-validate.
 
+> **Amendment re-validation (2026-09-25, architect rulings):** F1 **resolved** — arch. §10 (amended) now specifies that `set-password.js` deletes **all** of the user's session rows and accepts the new password via non-interactive piped stdin. The §1 exclusion was removed and **TC-ACC-028 extended** with the session-clearing assertion (step 4) — a strengthening; no test case was weakened. Closes coverage-matrix L-4.
+
 **Conventions for all integration cases below** (from the strategy): every state-changing HTTP call carries `X-Requested-With: XMLHttpRequest`; the app under test boots in-process (supertest) against a real PostgreSQL; every test starts from truncated tables; the test bootstrap sets `COOKIE_SECURE=true` so cookie attributes are assertable; fixture identities are fixed (`alice@test.local`, `bob@test.local`, `carol@test.local`; passwords `password-1`, `password-2`, …). Factories per strategy §5. The login-throttle's in-memory counters are reset between tests by the harness — a required testability hook on the auth module (the counters are not database state and would otherwise couple tests through shared (email, IP) keys).
 
 ## 1. Scope
@@ -22,7 +24,6 @@ Domain report: `.pipeline/analysis/accounts-access.md` · Architecture: `01-syst
 | NFR-ACC-002 (near-free hosting) | Deployment-design property — architecture review, not an app behavior |
 | Group-scoped UI flows (member lists, expenses) | Owned by the Groups & Membership and Expense Tracking plans; this plan verifies FR-ACC-008 at the API payload level (TC-ACC-018) |
 | NFR-ACC-005 (scale) | No accounts-specific scale behavior; verified by the multi-user/multi-group fixtures of the Groups & Membership plan (cross-referenced in `99-coverage-matrix.md`) |
-| Session behavior after an owner CLI password reset (`set-password.js`, TC-ACC-028) | Unspecified upstream: arch §10's runbook says the script writes the Argon2id hash but is silent on whether it also deletes the user's session rows (D-ARCH-002 covers the API password-change path only). Intentionally untested. **Recommendation recorded for the owner:** if the runbook is ever amended to have the script clear the user's sessions (mirroring D-ARCH-002's compromise rationale), TC-ACC-028 gains that assertion via the change-propagation rule |
 
 ## 2. Test Cases
 
@@ -286,19 +287,21 @@ Domain report: `.pipeline/analysis/accounts-access.md` · Architecture: `01-syst
 - Steps: load `/login`, `/register`, `/change-password`; measure page load per the T4 policy (median of 3, one retry on breach)
 - Expected result: each page's median load time ≤ **2.0 s**
 
-### TC-ACC-028 — Owner password-reset CLI sets a new working password
-- Traces to: UC-ACC-005 (automatable steps 3 + 5), BR-ACC-007, arch. §10 runbook, OQ-ACC-001 (decided)
+### TC-ACC-028 — Owner password-reset CLI sets a new working password and clears all sessions
+- Traces to: UC-ACC-005 (automatable steps 3 + 5), BR-ACC-007, arch. §10 runbook (amended 2026-09-25 — session clearing + piped stdin), D-ARCH-002 (CLI analogue: no session survives), OQ-ACC-001 (decided)
 - Level: system (runs in the e2e phase, post-build, against `E2E_DATABASE_URL`)
-- Preconditions: built artifact exists; user `alice@test.local` with old password `password-1`
+- Preconditions: built artifact exists; user `alice@test.local` with old password `password-1`; alice holds a valid session (cookie obtained via `POST /api/auth/login` with `password-1`)
 - Steps:
-  1. Exec `node dist/scripts/set-password.js alice@test.local` from `apps/api`, supplying the new password `password-cli-1` via **stdin** (the script must accept non-interactive stdin input — this is a testability requirement on the script)
+  1. Exec `node dist/scripts/set-password.js alice@test.local` from `apps/api`, supplying the new password `password-cli-1` via **stdin** (the script accepts non-interactive piped input — arch. §10, amended 2026-09-25)
   2. `POST /api/auth/login` with `password-cli-1`
   3. `POST /api/auth/login` with `password-1`
+  4. `GET /api/auth/me` with alice's **pre-CLI** session cookie
 - Expected result:
   1. process exits `0`
   2. `200` + session — the CLI-set password authenticates
   3. `401` — the old password is dead
-- Note: UC-ACC-005 steps 1–2 and E1 (identity verification, refusal) are the owner's out-of-app human procedure — not automatable, not tested. Session behavior after a CLI reset is unspecified upstream (arch §10 runbook is silent; D-ARCH-002 covers the API path only) — intentionally untested, see §1
+  4. `401 UNAUTHENTICATED` — the CLI deleted **all** of alice's session rows (an owner-initiated reset is the compromise-recovery path; no session survives — arch. §10, amended 2026-09-25)
+- Note: UC-ACC-005 steps 1–2 and E1 (identity verification, refusal) are the owner's out-of-app human procedure — not automatable, not tested. Session-clearing and stdin behavior are asserted per the architect amendment of 2026-09-25 (resolves F1 / coverage-matrix L-4)
 
 ### TC-ACC-029 — Account persists across the full exercised lifecycle
 - Traces to: NFR-ACC-004 (positive aspect)

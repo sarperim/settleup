@@ -7,6 +7,8 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
 
 **Standing value fixture** (used by TC-BAL-006…015, deterministic): alice logs an expense of 9000 kuruş (₺90.00), payer alice, EXACT split `{alice: 3000, bob: 3000, carol: 3000}` → balances: **alice +6000, bob −3000, carol −3000**, `sumKurus = 0`; outstanding plan: **bob → alice 3000, carol → alice 3000** (2 payments — the minimum for one creditor and two debtors; each debtor pays exactly their debt, so the plan is fully deterministic).
 
+> **Amendment re-validation (2026-09-25, architect rulings):** the combined party+mismatch precedence (L-6, settlement half) is **resolved** — API §4 (amended) fixes `NOT_PAYMENT_PARTY` before `SUGGESTION_STALE` on mark-paid, and the party check before `ALREADY_UNDONE` on undo. The previously untested combined cells are now asserted (TC-BAL-011 step 2, TC-BAL-014 row b) — strengthenings; no test case was weakened. Closes coverage-matrix L-6 (settlement half).
+
 ## 1. Scope
 
 **Covered here:** FR-BAL-001…010 · UC-BAL-001 (main, E1), UC-BAL-002 (main, A1, E1), UC-BAL-003 (main, E1), UC-BAL-004 (main, E1) · NFR-BAL-001…005 · BR-BAL-001…011 · the suggestion-engine half of SC-002 (minimality vs brute-force reference, determinism, edge cases, greedy fallback — strategy G-5) · the settle/undo parameters of the SC-005 zero-sum suite (completing the operation matrix started by TC-EXP-023) · the `SUGGESTION_STALE` consistency rule (strategy G-2, API §3.4) · cross-group balance isolation · CSRF on the two settlement state-changing routes · **SC-007 full-lifecycle e2e** (cross-domain journey owned here per strategy §11) · balance/settle-up page timings (NFR-BAL-004 page half; the ≤ 50 ms compute half is unit-level).
@@ -119,10 +121,12 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
 - Preconditions: standing value fixture; the suggestion {bob→alice 3000} is live
 - Steps:
   1. `POST …/settlements` as carol (a member, not a party): `{ payerId: <bob>, recipientId: <alice>, amountKurus: 3000 }`
-  2. `GET …/settlements` as alice
+  2. `POST …/settlements` as carol with a triple that also matches no live suggestion (`amountKurus: 9999`) — combined party + mismatch violations
+  3. `GET …/settlements` as alice
 - Expected result:
   1. `403`, code `NOT_PAYMENT_PARTY`
-  2. no settlement was created — `settled` is still empty, `outstanding` unchanged
+  2. `403`, code `NOT_PAYMENT_PARTY` — the party check precedes plan matching; an unauthorized caller triggers no plan work (API §4, amended 2026-09-25)
+  3. no settlement was created — `settled` is still empty, `outstanding` unchanged
 
 ### TC-BAL-012 — Mark paid with no matching live suggestion → SUGGESTION_STALE (strategy G-2)
 - Traces to: API §3.4 (mark-paid consistency rule), G-2, BR-BAL-008, FR-BAL-007 context, UC-BAL-003 (error side)
@@ -133,7 +137,8 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
   2. Row b — wrong direction / wrong parties: `{ payerId: alice, recipientId: bob, amountKurus: 3000 }` as alice; and `{ payerId: bob, recipientId: carol, amountKurus: 3000 }` as bob
   3. Row c — concurrent plan change: as bob, settle {bob→alice 3000} (201); then submit the **same triple again** (`{bob→alice 3000}` as bob) — it was in the plan when the client read it, but bob's balance is now 0
   4. Row d — nothing outstanding: with all balances zero, submit any well-formed triple as a member party to it
-- Expected result: every row → `409`, code `SUGGESTION_STALE`; no settlement row is created in any row (balances and `settled` unchanged after the failed calls). Row c is the §3.4 scenario: the plan is validated **as of the request's transaction** — a stale client plan is rejected, never double-applied
+  5. Row e — non-member named in the triple: as alice (the recipient — a party to the submitted triple), `{ payerId: <dave>, recipientId: <alice>, amountKurus: 3000 }` (dave is a registered non-member)
+- Expected result: every row → `409`, code `SUGGESTION_STALE`; no settlement row is created in any row (balances and `settled` unchanged after the failed calls). Row c is the §3.4 scenario: the plan is validated **as of the request's transaction** — a stale client plan is rejected, never double-applied. Row e: no live suggestion can name a non-member, so the exact-match rule rejects it (the party check passed — alice is the triple's recipient)
 
 ### TC-BAL-013 — Undo a settled payment, by either party (UC-BAL-004 main)
 - Traces to: FR-BAL-008, FR-BAL-009, UC-BAL-004 (main), BR-BAL-006/008, NFR-BAL-005, API §3c (undo row)
@@ -151,9 +156,12 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
 ### TC-BAL-014 — Undo by a member who is neither payer nor recipient is denied (UC-BAL-004 E1)
 - Traces to: FR-BAL-008 (deny side), UC-BAL-004 (E1), API §4 (`NOT_PAYMENT_PARTY`)
 - Level: integration
-- Preconditions: a settled payment exists (bob→alice)
-- Steps: `POST …/settlements/:settlementId/undo` as carol; then `GET …/settlements` as alice
-- Expected result: `403`, code `NOT_PAYMENT_PARTY`; the settlement remains `SETTLED` (no `undoneAt`) and balances are unchanged
+- Preconditions: row a — a settled payment exists (bob→alice); row b — a payment that was settled and then undone once (TC-BAL-013 state)
+- Steps:
+  - Row a: `POST …/settlements/:settlementId/undo` as carol (non-party, `SETTLED` target)
+  - Row b: `POST …/settlements/:settlementId/undo` as carol on the already-`UNDONE` settlement (non-party, `UNDONE` target — combined case)
+  - Then `GET …/settlements` as alice
+- Expected result: both rows → `403`, code `NOT_PAYMENT_PARTY`; row a: the settlement remains `SETTLED` (no `undoneAt`) and balances are unchanged; row b: the row remains `UNDONE`, unchanged — the party check precedes `ALREADY_UNDONE` (API §4, amended 2026-09-25)
 
 ### TC-BAL-015 — Undoing an already-undone settlement is rejected
 - Traces to: API §4 (`ALREADY_UNDONE`), data-model §5.2, UC-BAL-004 (error side)
@@ -293,7 +301,7 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
 | T | T (exact) | 201 SETTLED; balances shift; plan regenerates | TC-009/010 |
 | T | F (any mismatch — amount, parties, staleness, nothing outstanding) | 409 SUGGESTION_STALE; no row | TC-012(a–d) |
 | F | T | 403 NOT_PAYMENT_PARTY; no row | TC-011 |
-| F | F | 403 (authorization precedes plan matching — guard/handler order, arch. §8.1; intentionally untested as a combined case) | not tested (§1 note) |
+| F | F | 403 NOT_PAYMENT_PARTY — the party check precedes plan matching (API §4, amended 2026-09-25) | TC-011 (step 2) |
 
 **Undo** — conditions: (caller is a party?) × (status):
 
@@ -302,7 +310,7 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
 | T | SETTLED | 200 UNDONE + undoneAt; balances revert; plan regenerates | TC-013 |
 | T | UNDONE | 409 ALREADY_UNDONE; unchanged | TC-015 |
 | F | SETTLED | 403 NOT_PAYMENT_PARTY; unchanged | TC-014 |
-| F | UNDONE | 403 (same authorization layer) | not tested separately (same guard) |
+| F | UNDONE | 403 NOT_PAYMENT_PARTY — the party check precedes ALREADY_UNDONE (API §4, amended 2026-09-25) | TC-014 (row b) |
 
 ### State transition testing — SettledPayment (per row) and the derived plan
 **SettledPayment** (stored fact): `(none) → SETTLED → UNDONE`.
@@ -366,4 +374,4 @@ Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-
 | Strategy G-5 | greedy fallback > 12 nonzero | TC-004 | Covered |
 | API §3c/§3.4 | `NOT_PAYMENT_PARTY`, `SUGGESTION_STALE`, `ALREADY_UNDONE`; in-transaction plan validation | TC-011/014, 012, 015 | Covered |
 | API §1 CSRF (settlement routes) | 403 on POST settlements / undo | TC-020 | Covered |
-| — | Combined party+mismatch precedence on mark-paid/undo | — | Intentionally untested (§1 note) — authorization layer precedes; both outcomes are rejections |
+| — | Combined party+mismatch precedence on mark-paid/undo (API §4, amended 2026-09-25): `NOT_PAYMENT_PARTY` beats `SUGGESTION_STALE` and `ALREADY_UNDONE` | TC-011 (step 2), TC-014 (row b) | Covered |

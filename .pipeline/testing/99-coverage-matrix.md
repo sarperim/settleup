@@ -1,6 +1,8 @@
 # Coverage Matrix — Settle Up Test Plan (Consolidated)
 
 Status: **approved — final** (all four domain plans approved at their Gate 2 stops; user sign-off 2026-09-25) · Date: 2026-09-25
+
+> **Amendment re-validation (2026-09-25, architect rulings):** all five routed items resolved — I-1/I-2 **confirmed** (API §3 "Approve/reject semantics" note; TC-GRP-018/019 expected cells unchanged, one new combined row in TC-GRP-019); F1/L-4 **resolved** (arch. §10 amended: CLI clears all session rows + piped stdin; TC-ACC-028 extended with the session-clearing assertion); L-6 **resolved** (API §4 amended: fixed service-level check order per endpoint; combined cases added to TC-EXP-013/016 and TC-BAL-011/014); the BR-GRP-011 dangling reference **fixed** in 02 §5.3. Every change was a strengthening — no test case was weakened.
 Sources: `.pipeline/testing/00-test-strategy.md` (Gate 1 approved) + the four domain plans. Detail lives in the domain plans' own §4 matrices; this document is the cross-domain rollup and the orphan check. **TC IDs are permanent**; every ID below refers to `TC-<DOMAIN>-xxx` in the plan of that domain.
 
 ## 1. The plan set
@@ -148,7 +150,7 @@ Sources: `.pipeline/testing/00-test-strategy.md` (Gate 1 approved) + the four do
 | BR-GRP-008 | GRP-025, 019 + contract review | | BR-BAL-005 | BAL-003(d), 018 |
 | BR-GRP-009 | GRP-021 + ACC-015 | | BR-BAL-006 | BAL-009, 010, 013, 011, 014 |
 | BR-GRP-010 | GRP-015, 029 | | BR-BAL-007 | BAL-009, 019 |
-| BR-GRP-011 *(does not exist — numbering ends at 010)* | — | | BR-BAL-008 | BAL-009, 013, 019 |
+| BR-GRP-011 (dangling reference) | **Fixed upstream 2026-09-25** — 02 §5.3 now cites BR-GRP-010 only | | BR-BAL-008 | BAL-009, 013, 019 |
 | | | | BR-BAL-009 | GRP-021, ACC-018/025 |
 | | | | BR-BAL-010 | **Not automated** — feature absent (contract review) |
 | | | | BR-BAL-011 | BAL-003(e), 022 |
@@ -171,6 +173,7 @@ Sources: `.pipeline/testing/00-test-strategy.md` (Gate 1 approved) + the four do
 | Throttle contract (429, amended 2026-09-25) | ACC-031, 032, 033 |
 | Email normalization at login (amended 2026-09-25) | ACC-030 |
 | Error precedence — DTO before service (amended 2026-09-25) | ACC-034, 035 · GRP-010 · EXP-012 |
+| Service-level error precedence — fixed order per endpoint (amended 2026-09-25) | GRP-019 (row c) · EXP-013 (step 3), EXP-016 (step 2) · BAL-011 (step 2), BAL-014 (row b) |
 | `SUGGESTION_STALE` consistency rule (strategy G-2) | BAL-012 |
 | Suggestion greedy fallback > 12 nonzero (strategy G-5) | BAL-004 |
 | Expense-list defensive cap (strategy G-5) | EXP-025 |
@@ -195,10 +198,10 @@ Sources: `.pipeline/testing/00-test-strategy.md` (Gate 1 approved) + the four do
 | L-1 | SC-001 adoption outcome — real-world usage, not automatable | Strategy G-7 |
 | L-2 | NFR-ACC-002 near-free hosting — architecture/deployment review | Strategy §6 |
 | L-3 | 30-day session expiry and 15-minute throttle window **wall-clock rollover** — no clock injection (T6) | Strategy G-6 · ACC §1 |
-| L-4 | Owner CLI password reset — session behavior unspecified upstream (F1); recommended runbook amendment recorded | ACC §1 |
+| L-4 | Owner CLI password reset — session behavior: **resolved 2026-09-25** (architect amendment, arch. §10) — script deletes all session rows + accepts piped stdin; asserted by extended TC-ACC-028 | ACC TC-028 |
 | L-5 | BR-BAL-010 money movement — feature absent by design | BAL §1 |
-| L-6 | Combined-error precedence among service-level checks (EXP) and party+mismatch (BAL) — unspecified upstream, all outcomes are equivalent rejections | EXP §1 · BAL §1 |
-| L-7 | Interpretations I-1/I-2 (approve/reject on decided requests; non-member callers) — recorded, flagged for architect confirmation | GRP §1 |
+| L-6 | Combined-error precedence: **resolved 2026-09-25** (architect amendment, API §4) — fixed service-level check order per endpoint; asserted by TC-EXP-013 (step 3), TC-EXP-016 (step 2), TC-BAL-011 (step 2), TC-BAL-014 (row b) | EXP · BAL |
+| L-7 | Interpretations I-1/I-2: **confirmed 2026-09-25** (architect amendment, API §3) — TC-GRP-018/019 cells unchanged; the amendment's new combined case (member non-creator + decided request → 403) covered by TC-GRP-019 row c | GRP §1 |
 | L-8 | Join-code entropy — by construction (CSPRNG), not separately testable | GRP §1 |
 | L-9 | UC-ACC-005 steps 1–2 and E1 (owner's human identity verification) — out-of-app by design | ACC §1 |
 | L-10 | No load tests — load trivial by construction at 8×5 scale | Strategy §6 |
