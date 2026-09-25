@@ -1,0 +1,13 @@
+{
+  "name": "shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Settle Up shared package — kuruş money types, DTO types, constants (owned by TKT-foundation-003).",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

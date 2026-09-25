@@ -1,0 +1,13 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm 10 ignores dependency build scripts unless allow-listed. These packages
+# need their postinstall scripts to install native/engine binaries (esbuild,
+# Prisma engines, argon2 native bindings). Keep this list minimal and justified.
+onlyBuiltDependencies:
+  - argon2
+  - esbuild
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma

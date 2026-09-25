@@ -1,0 +1,23 @@
+{
+  "name": "settleup",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Settle Up — shared-expense tracking for a friend group (monorepo root).",
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck",
+    "build": "pnpm -r --sort run build",
+    "test": "node scripts/test-stub.mjs",
+    "test:e2e": "node scripts/e2e-stub.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.18.0",
+    "fast-check": "^3.22.0",
+    "supertest": "^7.0.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^3.2.4"
+  }
+}
