@@ -1,6 +1,6 @@
 # Coverage Matrix — Settle Up Test Plan (Consolidated)
 
-Status: **draft — awaiting final approval** (consolidates the Gate 2 approvals; the Expense Tracking and Balances & Settlement plans are presented for approval together with this matrix) · Date: 2026-09-25
+Status: **approved — final** (all four domain plans approved at their Gate 2 stops; user sign-off 2026-09-25) · Date: 2026-09-25
 Sources: `.pipeline/testing/00-test-strategy.md` (Gate 1 approved) + the four domain plans. Detail lives in the domain plans' own §4 matrices; this document is the cross-domain rollup and the orphan check. **TC IDs are permanent**; every ID below refers to `TC-<DOMAIN>-xxx` in the plan of that domain.
 
 ## 1. The plan set
@@ -10,8 +10,8 @@ Sources: `.pipeline/testing/00-test-strategy.md` (Gate 1 approved) + the four do
 | `00-test-strategy.md` | Gate 1 approved | — | — | — | — | — |
 | `accounts-access.md` | Gate 2 approved | 35 (TC-ACC-001…035) | 1 | 28 | 5 | 1 (TC-ACC-028, e2e phase) |
 | `groups-membership.md` | Gate 2 approved | 31 (TC-GRP-001…031) | 2 | 23 | 6 | — |
-| `expense-tracking.md` | **awaiting Gate 2** | 33 (TC-EXP-001…033) | 6 | 21 | 6 | — |
-| `balances-settlement.md` | **awaiting Gate 2** | 26 (TC-BAL-001…026) | 5 | 15 | 6 | — |
+| `expense-tracking.md` | Gate 2 approved | 33 (TC-EXP-001…033) | 6 | 21 | 6 | — |
+| `balances-settlement.md` | Gate 2 approved | 26 (TC-BAL-001…026) | 5 | 15 | 6 | — |
 | **Total** | | **125** | **14** | **87** | **23** | **1** |
 
 ## 2. Success criteria verification

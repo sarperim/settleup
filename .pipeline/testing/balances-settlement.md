@@ -1,6 +1,6 @@
 # Balances & Settlement Test Plan
 
-Status: **awaiting Gate 2 approval** · Date: 2026-09-25
+Status: **approved at Gate 2** (2026-09-25) · Date: 2026-09-25
 Domain report: `.pipeline/analysis/balances-settlement.md` · Architecture: `01-system-architecture.md` (C5, §5.2, §5.3, §8.1), `02-data-model.md` (settled_payments, §5.2, §7), `03-api-design.md` (§1, §3c, §3.4, §4) · Inherits every rule of `.pipeline/testing/00-test-strategy.md` (approved at Gate 1).
 
 **Conventions for all integration cases below** (from the strategy, identical to the previous plans): every state-changing HTTP call carries `X-Requested-With: XMLHttpRequest`; in-process supertest against a real PostgreSQL; truncated tables per test; `COOKIE_SECURE=true`; fixed identities (`alice@test.local` creator, `bob@test.local` / `carol@test.local` members, `dave@test.local` registered non-member; passwords `password-1`, …). **Determinism of values (strategy T5):** where balance or suggestion **values** are asserted, fixtures use **exact splits or evenly dividing equal splits** (deterministic); random remainder draws are asserted structurally only. **Derived-state rule (strategy G-3):** all integration assertions about outstanding suggestions go through `GET …/settlements` and mark-paid — never against stored plan rows (there are none; D-ARCH-004). **E2e conventions:** per-run recreated database; every e2e case self-contained with its own unique fixed identities through the UI.
