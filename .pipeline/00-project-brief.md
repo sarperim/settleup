@@ -40,7 +40,7 @@ Today the friend group (~8 people) tracks shared expenses on trips and dinners w
 **Balances**
 - Per-group running balance for every member; balances never mix across groups.
 - Group balances always sum to exactly 0.00 TRY.
-- Uneven equal splits (e.g., 100.00 ÷ 3) apply a deterministic, documented remainder rule (see ASM-001).
+- Uneven equal splits (e.g., 100.00 ÷ 3) apply a documented random-spread remainder rule (see ASM-001): leftover kuruş are assigned one each to randomly chosen distinct participants, decided once when the expense is created and stored with it.
 
 **Settlement**
 - Settlement suggestions: who pays whom, and how much, to zero out all group balances with the minimum number of payments.
@@ -74,14 +74,14 @@ Today the friend group (~8 people) tracks shared expenses on trips and dinners w
 - Project size: intentionally small — scoped so the whole MVP can be delivered in one continuous build effort.
 
 ## 8. Assumptions
-- **ASM-001:** On an uneven equal split, the **payer absorbs the leftover cent** (e.g., 100.00 ÷ 3 → 33.34 for the payer-participant, 33.33 for the others). The user delegated the rule choice with the requirements that it be deterministic and documented. *Validate: confirm with the user before build; whichever rule is chosen must hold the OBJ-004 zero-sum invariant in tests.*
+- **ASM-001:** On an uneven equal split, each participant's base share is amount ÷ participant count, rounded down to the kuruş. Leftover kuruş are assigned one each to randomly chosen distinct participants — no participant receives more than one extra kuruş. The draw happens once, when the expense is created (re-rolled only if amount or participants are edited), and the shares are stored as the expense's permanent record. Decided by the user 2026-09-25, superseding the payer-absorbs proposal. Must hold the OBJ-004 zero-sum invariant in tests.
 - **ASM-002:** All amounts are entered and stored in TRY with 2 decimal places (kuruş); no other precision exists in the system. *Validate: API/data-model design review.*
 - **ASM-003:** Changing password requires entering the current password. *Validate: security review.*
 - **ASM-004:** Standard session management exists, including logout. *Validate: architecture phase.*
 
 ## 9. Success Criteria
 - **SC-001 (→ OBJ-001):** All ~8 friend-group members hold registered accounts, and the group logs its shared expenses in the app across at least one full trip/dinner cycle that ends in settlement.
-- **SC-002 (→ OBJ-002):** The settlement suggestion engine returns the minimum achievable number of transactions for a given balance set — verified by a test suite covering edge cases (uneven equal split with remainder, circular debts, single debtor/creditor, zero-balance members). Exact search is acceptable given ≤ 8 members per group.
+- **SC-002 (→ OBJ-002):** The settlement suggestion engine returns the minimum achievable number of transactions for a given balance set — verified by a test suite covering edge cases (uneven equal split with remainder — asserted by properties: exact sum, distinct recipients, max one extra kuruş each, circular debts, single debtor/creditor, zero-balance members). Exact search is acceptable given ≤ 8 members per group.
 - **SC-003 (→ OBJ-003):** A member can log an expense (description, amount, payer, participants, split) in ≤ 30 seconds.
 - **SC-004 (→ OBJ-003):** Pages load in ≤ 2 seconds on a normal connection.
 - **SC-005 (→ OBJ-004):** After every create / edit / delete / settle / undo operation, the group's member balances sum to exactly 0.00 TRY — enforced by tests.
@@ -101,7 +101,7 @@ Today the friend group (~8 people) tracks shared expenses on trips and dinners w
 | Payer | The member who paid the expense up front. |
 | Participants | The members among whom the expense is split. |
 | Split | How the amount divides among participants: **equal** or **exact amounts**. |
-| Remainder cent | The kuruş left over when an equal split doesn't divide evenly; resolved by a deterministic rule (ASM-001: payer absorbs). |
+| Remainder cent | The kuruş left over when an equal split doesn't divide evenly; resolved by the random-spread rule (ASM-001): one kuruş each to randomly chosen distinct participants, drawn once at creation. |
 | Balance | A member's net position within one group — positive means owed money, negative means owing. Never mixed across groups. |
 | Settlement suggestion | The app's plan of who pays whom, and how much, to zero out all group balances with the minimum number of payments. |
 | Settlement | A suggested payment that has been marked as paid. |
