@@ -128,3 +128,38 @@ describe('request logging (arch. §8.4)', () => {
     expect(everything).not.toContain(JOIN_CODE);
   });
 });
+
+describe('logger redaction (arch. §8.4, defense-in-depth; round 2, F-S-6)', () => {
+  it('censors secret-shaped keys at the sink, top level and one level deep', () => {
+    const sink = memoryLogDestination();
+    const logger = buildLogger('info', sink.stream);
+
+    logger.info(
+      {
+        password: SECRET,
+        email: 'alice@test.local',
+        token: 'session-token-value',
+        authorization: 'Bearer some-token',
+        settleup_session: 'cookie-value',
+        nested: { password: SECRET, email: 'alice@test.local' },
+        kept: 'not-a-secret',
+      },
+      'redaction_probe',
+    );
+
+    const line = JSON.parse(sink.lines[0] ?? '{}') as Record<
+      string,
+      unknown & { nested?: Record<string, unknown> }
+    >;
+    expect(line.password).toBe('[redacted]');
+    expect(line.email).toBe('[redacted]');
+    expect(line.token).toBe('[redacted]');
+    expect(line.authorization).toBe('[redacted]');
+    expect(line.settleup_session).toBe('[redacted]');
+    expect(line.nested?.password).toBe('[redacted]');
+    expect(line.nested?.email).toBe('[redacted]');
+    expect(line.kept).toBe('not-a-secret');
+    expect(JSON.stringify(line)).not.toContain(SECRET);
+    expect(JSON.stringify(line)).not.toContain('alice@test.local');
+  });
+});
