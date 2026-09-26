@@ -35,18 +35,23 @@ export type Kurus = number & { readonly [KurusBrand]: true };
 
 /** Why `parseKurus` rejected an input. */
 export type KurusParseRejection =
-  | 'EMPTY' /** `""` — nothing to parse. */
-  | 'NEGATIVE' /** Leading `-` (BR-EXP-010: negative amounts are invalid). */
-  | 'NON_NUMERIC' /**
+  /** `""` — nothing to parse. */
+  | 'EMPTY'
+  /** Leading `-` (BR-EXP-010: negative amounts are invalid). */
+  | 'NEGATIVE'
+  /**
    * Not a plain decimal string: stray characters, sign other than the
    * rejected leading `-` (e.g. `+`), comma separator, spaces, `123.`,
    * `.45`, non-numeric text.
    */
-  | 'TOO_MANY_DECIMALS' /** More than 2 fractional digits (e.g. "1.234"). */
-  | 'ABOVE_STORAGE_BOUND'; /**
+  | 'NON_NUMERIC'
+  /** More than 2 fractional digits (e.g. "1.234"). */
+  | 'TOO_MANY_DECIMALS'
+  /**
    * Valid shape, but the value exceeds 2,147,483,647 kuruş
    * (₺21,474,836.47) — the `Int` storage bound.
    */
+  | 'ABOVE_STORAGE_BOUND';
 
 /**
  * The documented failure mode of `parseKurus`: a discriminated result —
