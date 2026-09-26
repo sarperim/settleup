@@ -1,8 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 
-// Placeholder entry point (TKT-foundation-001). TKT-foundation-005 replaces
-// this with the real SPA shell (router + layout + API client).
+import App from './App';
+
+// SPA entry point (TKT-foundation-005): mount the router tree. Deep-link
+// navigation works because the dev server (and later the API's static
+// serving) falls back to index.html for unknown paths.
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
@@ -11,6 +15,8 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <h1>Settle Up</h1>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );
