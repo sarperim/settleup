@@ -10,6 +10,13 @@ on:
     branches: [master]
   pull_request:
 
+# Least-privilege GITHUB_TOKEN (TKT-foundation-007, review round 1 / S-3):
+# nothing in this workflow needs more than read access to the repository
+# contents. Not present in 04-ci-pipeline.md §4; deviation documented in
+# the ticket.
+permissions:
+  contents: read
+
 # A new push to the same PR cancels the now-outdated run (saves minutes)
 concurrency:
   group: ci-${{ github.ref }}
