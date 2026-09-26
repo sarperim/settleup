@@ -8,7 +8,9 @@
  * `userId` slot is `null` until the AuthGuard (C2) populates `req.user`.
  *
  * Never logs request bodies, cookies, emails, session tokens or passwords —
- * only method/path/status/duration and identifiers.
+ * only method/path/status/duration and identifiers. The logged `path`
+ * excludes the query string (a query param may carry a secret, e.g. a join
+ * code — NFR-GRP-005).
  */
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
@@ -30,7 +32,7 @@ export function createRequestLoggingMiddleware(logger: Logger) {
       logger.info(
         {
           method: req.method,
-          path: req.originalUrl ?? req.url,
+          path: req.path,
           status: res.statusCode,
           durationMs,
           requestId,
