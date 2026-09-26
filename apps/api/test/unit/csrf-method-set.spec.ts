@@ -39,7 +39,7 @@ describe('CSRF state-changing method set (arch. §8.2, 03 §1)', () => {
     },
   );
 
-  it.each(['get', 'head', 'options', 'put'] as const)(
+  it.each(['get', 'options', 'put'] as const)(
     'does not require X-Requested-With on %s (reaches routing)',
     async (method) => {
       const response = await request(app.getHttpServer())[method](
@@ -55,4 +55,14 @@ describe('CSRF state-changing method set (arch. §8.2, 03 §1)', () => {
       });
     },
   );
+
+  it('does not require X-Requested-With on head (reaches routing)', async () => {
+    const response = await request(app.getHttpServer()).head('/api/anything');
+
+    // HEAD carries no body by HTTP semantics — pin the routing outcome and
+    // the envelope's content type instead (404 JSON, never a 403).
+    expect(response.status).toBe(404);
+    expect(response.headers['content-type']).toContain('application/json');
+    expect(response.body).toEqual({});
+  });
 });
