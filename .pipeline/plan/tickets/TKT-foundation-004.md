@@ -1,6 +1,6 @@
 # TKT-foundation-004: API platform — bootstrap, error contract, CSRF, logging, static SPA
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Create/modify** `apps/api/src/**` — the cross-cutting platform every domain module (C2–C5) sits on:
   - Nest bootstrap (`main.ts`): helmet, cookie-parser, Express `trust proxy` (the Caddy hop — arch §8.2), global `/api` prefix.
