@@ -1,6 +1,7 @@
 # TKT-foundation-006: Integration & e2e harness (completes the runner contract)
 
 - Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/7 (base: dev)
 - Size: M
 - Scope: **Create** the DB-backed and browser-level harness layers that grow TKT-foundation-007's unit runner into the final 04-ci-pipeline.md §3 script contract:
   - Vitest **integration project** (`apps/api/test/integration`): requires `DATABASE_URL`, boots the NestJS app in-process (supertest), truncates all tables before each test, sets `COOKIE_SECURE=true` (00-test-strategy.md §2/§3 T2–T3, domain-plan conventions).
