@@ -46,9 +46,11 @@ export function configurePlatform(
   app: NestExpressApplication,
   logger: Logger,
 ): void {
+  // Helmet first so every response — including CSRF early-rejections —
+  // carries the default security headers (arch. §8.2).
+  app.use(helmet());
   app.use(createRequestLoggingMiddleware(logger));
   app.use(createCsrfMiddleware());
-  app.use(helmet());
   app.use(cookieParser());
   // The Caddy hop: trust exactly one proxy so `req.ip` is the originating
   // client, not the proxy (arch. §8.2 login-throttle keying).
