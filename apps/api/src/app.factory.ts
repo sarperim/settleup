@@ -89,7 +89,12 @@ export function configureServing(
 
   server.use((req, res, next) => {
     const isRead = req.method === 'GET' || req.method === 'HEAD';
-    const isApi = req.path === '/api' || req.path.startsWith('/api/');
+    // Case-insensitive prefix check (review round 2, F-S-5): an `/API/x`
+    // navigation must not be served the SPA — every casing of the prefix
+    // belongs to the API surface, so such requests fall through to routing
+    // (a JSON 404), never to index.html.
+    const path = req.path.toLowerCase();
+    const isApi = path === '/api' || path.startsWith('/api/');
     if (!isRead || isApi || !req.accepts('html')) {
       next();
       return;

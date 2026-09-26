@@ -82,4 +82,15 @@ describe('SPA static serving (arch. §7 NFR-ACC-003)', () => {
     expect(response.headers['content-type']).toContain('application/json');
     expect(response.body.error.code).toBe('NOT_FOUND');
   });
+
+  it('does not hijack /api routes regardless of URL casing (round 2, F-S-5)', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/API/unknown')
+      .set('Accept', 'text/html');
+
+    expect(response.status).toBe(404);
+    expect(response.headers['content-type']).toContain('application/json');
+    expect(response.body.error.code).toBe('NOT_FOUND');
+    expect(response.text).not.toContain(INDEX_MARKER);
+  });
 });
