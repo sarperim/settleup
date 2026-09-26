@@ -18,8 +18,6 @@ export const SPA_ROUTE_PATTERNS = [
   '/change-password',
 ] as const;
 
-export type SpaRoutePattern = (typeof SPA_ROUTE_PATTERNS)[number];
-
 /** Typed path builders — the only place routes are composed. */
 export const SPA_ROUTES = {
   register: '/register',

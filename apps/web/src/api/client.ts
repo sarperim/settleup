@@ -43,8 +43,6 @@ export interface ApiClientOptions {
   fetchImpl?: typeof fetch;
   /** Invoked when the API answers `401 UNAUTHENTICATED` (default: go to `/login`). */
   onUnauthenticated?: () => void;
-  /** Base path override — exists for tests; production is always `/api`. */
-  basePath?: string;
 }
 
 export interface ApiClient {
@@ -66,11 +64,11 @@ function defaultUnauthenticatedRedirect(): void {
  * are not site-relative (`//host`, `http://…`) — the wrapper never talks to
  * a different origin (arch 01 §2 C1).
  */
-function buildUrl(basePath: string, path: string): string {
+function buildUrl(path: string): string {
   if (!path.startsWith('/') || path.startsWith('//')) {
     throw new TypeError(`API client path must be site-relative and start with "/" — got "${path}"`);
   }
-  return `${basePath}${path}`;
+  return `${API_BASE_PATH}${path}`;
 }
 
 async function readBody(response: Response): Promise<unknown> {
@@ -94,11 +92,10 @@ async function readBody(response: Response): Promise<unknown> {
 export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const onUnauthenticated = options.onUnauthenticated ?? defaultUnauthenticatedRedirect;
-  const basePath = options.basePath ?? API_BASE_PATH;
 
   async function request<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<T> {
     const { method = 'GET', body, signal } = requestOptions;
-    const url = buildUrl(basePath, path);
+    const url = buildUrl(path);
 
     const headers: Record<string, string> = { Accept: 'application/json' };
     let bodyInit: string | undefined;
