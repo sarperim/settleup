@@ -18,6 +18,4 @@ export interface RequestContext {
   user?: AuthenticatedUserRef;
 }
 
-export type RequestWithContext = Request & Partial<RequestContext> & {
-  user?: AuthenticatedUserRef;
-};
+export type RequestWithContext = Request & Partial<RequestContext>;

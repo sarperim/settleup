@@ -106,7 +106,12 @@ export function loadEnv(
     ),
   };
 
-  const cookieSecure = readBoolean(source.COOKIE_SECURE, true, problems);
+  const cookieSecure = readBoolean(
+    source.COOKIE_SECURE,
+    'COOKIE_SECURE',
+    true,
+    problems,
+  );
 
   if (problems.length > 0) {
     throw new EnvValidationError(problems);
@@ -181,6 +186,7 @@ function readPositiveInt(
 
 function readBoolean(
   raw: string | undefined,
+  name: string,
   fallback: boolean,
   problems: string[],
 ): boolean {
@@ -194,6 +200,6 @@ function readBoolean(
   if (value === 'false' || value === '0' || value === 'no') {
     return false;
   }
-  problems.push(`COOKIE_SECURE must be a boolean (got "${value}")`);
+  problems.push(`${name} must be a boolean (got "${value}")`);
   return fallback;
 }
