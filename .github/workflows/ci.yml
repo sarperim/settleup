@@ -43,8 +43,13 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
+        # NOTE (TKT-foundation-007, first live CI run): pnpm/action-setup@v4
+        # errors if an explicit `version:` is given here AND root
+        # package.json declares `packageManager` (f-001 baseline pins
+        # pnpm@10.34.5) — "Multiple versions of pnpm specified". The
+        # package.json pin is the single source of truth, so no `version:`
+        # input is passed. Deviation from 04-ci-pipeline.md §4 verbatim;
+        # recommended amendment for the architecture doc.
 
       - name: Install Node 24 (with pnpm cache)
         uses: actions/setup-node@v4
