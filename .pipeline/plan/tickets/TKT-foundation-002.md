@@ -1,6 +1,6 @@
 # TKT-foundation-002: Prisma data model & initial migration
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Create** `apps/api/prisma/**`:
   - `schema.prisma` — the reference schema of 02-data-model.md §4 transcribed field-for-field (8 models: User, Session, Group, JoinRequest, Membership, Expense, ExpenseShare, SettledPayment; 3 enums; `@unique`/`@@unique` constraints; `@@index`es; relations incl. `onDelete: Cascade` on ExpenseShare→Expense).
