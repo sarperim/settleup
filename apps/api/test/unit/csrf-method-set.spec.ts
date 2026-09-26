@@ -47,7 +47,12 @@ describe('CSRF state-changing method set (arch. §8.2, 03 §1)', () => {
       );
 
       expect(response.status).toBe(404);
-      expect(response.body.error?.code ?? 'NOT_FOUND').toBe('NOT_FOUND');
+      // Exact envelope (review round 2, F-C-5): the previous
+      // `error?.code ?? 'NOT_FOUND'` silently passed a regressed
+      // string-shaped 404 body.
+      expect(response.body).toEqual({
+        error: { code: 'NOT_FOUND', message: 'Not found.' },
+      });
     },
   );
 });
