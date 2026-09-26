@@ -62,7 +62,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
           err: exception,
           requestId: request.id,
           method: request.method,
-          path: request.originalUrl ?? request.url,
+          // Same rule as the request-logging middleware: never persist the
+          // query string — a query param may carry a secret (join code,
+          // token — arch. §8.4). `request.path` is the query-less pathname.
+          path: request.path,
           unmappedStatus: resolved.unmappedStatus,
         },
         'unhandled_exception',
