@@ -15,15 +15,19 @@ import { AppRoutes } from './App';
 
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/;
 
-const CASES: ReadonlyArray<{ path: string; heading: string }> = [
-  { path: '/register', heading: 'Create account' },
-  { path: '/login', heading: 'Log in' },
-  { path: '/', heading: 'Groups' },
-  { path: '/groups/g1', heading: 'Group' },
-  { path: '/groups/g1/expenses/new', heading: 'Add expense' },
-  { path: '/groups/g1/expenses/e2/edit', heading: 'Edit expense' },
-  { path: '/join/ABC123', heading: 'Join group' },
-  { path: '/change-password', heading: 'Change password' },
+// Each case asserts page-unique placeholder text — never a root-layout nav
+// label ('Groups', 'Change password') or a substring of one. Asserting nav
+// labels masked broken route wiring: the chrome rendered them regardless of
+// the page (review round 1, F-1).
+const CASES: ReadonlyArray<{ path: string; content: string }> = [
+  { path: '/register', content: 'Registration form placeholder.' },
+  { path: '/login', content: 'Login form placeholder.' },
+  { path: '/', content: 'Groups overview placeholder.' },
+  { path: '/groups/g1', content: 'Group ledger placeholder.' },
+  { path: '/groups/g1/expenses/new', content: 'Add-expense form placeholder.' },
+  { path: '/groups/g1/expenses/e2/edit', content: 'Edit-expense form placeholder.' },
+  { path: '/join/ABC123', content: 'Join confirmation placeholder.' },
+  { path: '/change-password', content: 'Change-password form placeholder.' },
 ];
 
 function render(path: string): string {
@@ -35,9 +39,9 @@ function render(path: string): string {
 }
 
 describe('SPA shell rendering', () => {
-  it.each(CASES)('renders the $path placeholder', ({ path, heading }) => {
+  it.each(CASES)('renders the $path placeholder', ({ path, content }) => {
     const html = render(path);
-    expect(html).toContain(heading);
+    expect(html).toContain(content);
     // Root layout chrome wraps every route.
     expect(html).toContain('app-shell');
   });
