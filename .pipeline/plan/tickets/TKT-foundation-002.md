@@ -1,6 +1,7 @@
 # TKT-foundation-002: Prisma data model & initial migration
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/3
 - Size: M
 - Scope: **Create** `apps/api/prisma/**`:
   - `schema.prisma` — the reference schema of 02-data-model.md §4 transcribed field-for-field (8 models: User, Session, Group, JoinRequest, Membership, Expense, ExpenseShare, SettledPayment; 3 enums; `@unique`/`@@unique` constraints; `@@index`es; relations incl. `onDelete: Cascade` on ExpenseShare→Expense).
@@ -18,3 +19,7 @@
 - Parallel group: P-1 (with TKT-foundation-003 — verified disjoint: this ticket writes `apps/api/prisma/**` + `apps/api/package.json` scripts only; TKT-foundation-003 writes `packages/shared/**` only)
 
 **Audit note:** lockfile-eligible ticket of P-1 — if a dependency outside the TKT-foundation-001 baseline is genuinely required, only this ticket may add it; TKT-foundation-003 may not.
+
+**Flagged during implementation (recorded for the review loop):**
+- **FLAG-1 (architecture-doc defect — blocked the migration):** `02-data-model.md §4` renders the generator header and the enums on a single line (`generator client { provider = "prisma-client-js" }`, `enum SplitType { EQUAL EXACT }`). This is **invalid Prisma grammar** under the pinned Prisma 6.19.3 (P1012 "not a valid definition within a generator" / "This line is not an enum value definition") — the reference schema as literally written cannot compile. The shipped schema normalizes to one-setting-per-line / one-value-per-line; **enum names, values, and order are unchanged** (semantic contract intact — acceptance criterion 1 still holds for models, enums, uniques, indexes, relations, cascade). Recommended amendment to `02 §4`: same normalization (architect). Also annotated in the schema header comment.
+- Dev-env note: local verification ran on Node v22 (f-001 pins `engines: >=24`) against genuine **PostgreSQL 17.11** binaries (no Docker/root on the box) — all four acceptance criteria passed (migrate dev, migrate deploy ×2, idempotency, generate + typecheck + runtime client import). CI runner (Node 24) unaffected.
