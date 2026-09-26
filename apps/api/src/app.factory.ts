@@ -30,6 +30,13 @@ export interface CreateHttpAppOptions {
   loggerStream?: DestinationStream;
   /** Static SPA root override (tests); defaults to `apps/web/dist`. */
   webRoot?: string;
+  /**
+   * Pre-validated config (review round 2, F-K-4): the production boot
+   * validates once in `bootstrap()` and passes the result through, so the
+   * whole boot runs on a single `loadEnv()` call. Callers that omit it
+   * (tests) get `process.env` validated here.
+   */
+  env?: AppConfig;
 }
 
 /**
@@ -123,7 +130,7 @@ function cacheControlFor(relativePath: string): string {
 export async function createHttpApp(
   options: CreateHttpAppOptions = {},
 ): Promise<NestExpressApplication> {
-  const env: AppConfig = loadEnv(process.env);
+  const env: AppConfig = options.env ?? loadEnv(process.env);
   const logger =
     options.logger ?? buildLogger(env.logLevel, options.loggerStream);
 
