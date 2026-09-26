@@ -42,12 +42,16 @@ import type {
  * Each exported DTO type is pinned here twice:
  *
  * 1. **Type level** — every sample below is a fully typed literal of the
- *    exported type, so a field rename/removal in `src/dto/**` breaks these
- *    literals (editor/tsc feedback now; CI-enforced once package
- *    typecheck covers test code — planner item C-3).
+ *    exported type, so a field rename/removal/type change in `src/dto/**`
+ *    fails `pnpm typecheck`: the package `typecheck` script compiles the
+ *    test sources too, via `tsconfig.test.json` (wired in review round 1,
+ *    F-1 — before that, no CI gate compiled this file, so the type pins
+ *    were editor-only).
  * 2. **Runtime level** — the exact key set of each sample is asserted, so
- *    the documented shape of the frozen contract is executable and fails
- *    `vitest run` on drift.
+ *    the documented shape of the frozen contract is executable
+ *    documentation; `vitest run` fails if a sample and its expected key
+ *    set drift apart. Types are erased at runtime — catching changes in
+ *    `src/dto/**` itself is pin 1's job.
  *
  * Samples follow the shape assertions of the approved test plans where they
  * exist (e.g. TC-GRP-007's exactly-`{groupId, groupName}` join-info body,
