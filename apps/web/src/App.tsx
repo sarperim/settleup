@@ -17,7 +17,7 @@ import { GroupViewPage } from './pages/GroupViewPage';
 import { JoinPage } from './pages/JoinPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import { SPA_ROUTES } from './routes';
+import { SPA_ROUTE_PARAMS, SPA_ROUTES } from './routes';
 
 /**
  * The route tree, exported separately so tests can render it inside a
@@ -30,11 +30,15 @@ export function AppRoutes() {
         <Route path={SPA_ROUTES.register} element={<RegisterPage />} />
         <Route path={SPA_ROUTES.login} element={<LoginPage />} />
         <Route path={SPA_ROUTES.groupsOverview} element={<GroupsOverviewPage />} />
-        <Route path="/groups/:groupId" element={<GroupViewPage />} />
-        <Route path="/groups/:groupId/expenses/new" element={<AddExpensePage />} />
-        <Route path="/groups/:groupId/expenses/:expenseId/edit" element={<EditExpensePage />} />
-        <Route path="/join/:code" element={<JoinPage />} />
+        <Route path={SPA_ROUTE_PARAMS.groupView} element={<GroupViewPage />} />
+        <Route path={SPA_ROUTE_PARAMS.addExpense} element={<AddExpensePage />} />
+        <Route path={SPA_ROUTE_PARAMS.editExpense} element={<EditExpensePage />} />
+        <Route path={SPA_ROUTE_PARAMS.join} element={<JoinPage />} />
         <Route path={SPA_ROUTES.changePassword} element={<ChangePasswordPage />} />
+        {/* Catch-all approximation of §6's protected-route row ("any
+            protected route while anonymous → redirect to /login",
+            UC-ACC-006): §6 defines no public wildcard, so an unknown path
+            is handled like an anonymous hit on a protected page. */}
         <Route path="*" element={<Navigate to={SPA_ROUTES.login} replace />} />
       </Route>
     </Routes>
