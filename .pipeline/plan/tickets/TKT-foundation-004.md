@@ -45,7 +45,7 @@
 
 - `pnpm lint` ✅ · `pnpm typecheck` ✅ · `pnpm build` ✅ · `pnpm install --frozen-lockfile` ✅
 - `pnpm test` ✅ — 51 passed / 10 files (25 tests are new platform specs under `apps/api/test/unit/`).
-- Review round 2 (fixer dispatch #1, after the round-1 fixes): `pnpm lint` ✅ · `pnpm typecheck` ✅ · `pnpm test` ✅ — 70 passed / 14 files (all round-2 pins included; every pin was verified to fail against the pre-fix code).
+- Review round 2 (fixer dispatch #1, after the round-1 fixes): `pnpm lint` ✅ · `pnpm typecheck` ✅ · `pnpm test` ✅ — 70 passed / 14 files (all round-2 pins included). Of those pins, the five behavior-fix pins — F-S-1 error-log path, F-K-1 413 branch, F-K-3 strict env parsing, F-S-5 case-insensitive `/api`, F-S-6 redaction — were each verified to fail against the pre-fix code; the F-C-5 exact-envelope and F-K-5 401/429 pins pin already-correct behavior and pass pre-fix by design — which is exactly what makes them regression pins (round-2 F-C2-2/F-K2-3; wording corrected in dispatch #2).
 - Acceptance criteria → specs: (1) `tc-foundation-004-a1-boot-env.spec.ts` + `node dist/main.js` missing-env exit-1 boot check; (2) + (3) `tc-foundation-004-a2-csrf-error-envelope.spec.ts`; (3) `tc-foundation-004-a3-validation-internal.spec.ts`; (4) `tc-foundation-004-a4-static-spa.spec.ts` + real `apps/web/dist` boot check (`PORT=4273`); (5) `tc-foundation-004-a5-request-logging.spec.ts` + boot-check log lines.
 - Note: `apps/api/test/**` is not covered by the api `lint`/`typecheck` scripts (they glob `src/**/*.ts`) — the same test-dir coverage gap TKT-foundation-003 recorded; TKT-foundation-006 owns harness-level gating.
 
