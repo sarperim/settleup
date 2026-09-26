@@ -16,6 +16,10 @@ import { loadEnv } from './config/env';
 export async function bootstrap(): Promise<NestExpressApplication> {
   const env = loadEnv(process.env);
   const app = await createHttpApp();
+  // SIGTERM (deploy restarts, container stop) runs the destroy lifecycle:
+  // `PrismaService.onModuleDestroy()` → `$disconnect()` — before the hooks
+  // are enabled the signal kills the process without closing the client.
+  app.enableShutdownHooks();
   await app.listen(env.port);
   return app;
 }
