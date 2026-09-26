@@ -1,7 +1,7 @@
 # TKT-foundation-003: Shared package — kuruş money helpers, DTO types, constants
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/4 (base: dev — carries the f-007 CI pipeline; master lacks it, same base as PR #2)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/4 (merged 2026-09-26, merge commit f5c4a7a → dev — carries the f-007 CI pipeline; master lacks it, same base as PR #2; merged by owner after review round 1 and its fixes — .pipeline/plan/reviews/TKT-foundation-003-round-1.md, no round-2 artifact on file)
 - Size: M
 - Scope: **Create** `packages/shared/src/**` and `packages/shared/test/unit/**` (suite layout per 00-test-strategy.md §8):
   - Branded `Kurus` type + `parseKurus` / `formatKurus` implementing the 02-data-model.md §8 contract exactly (accepted: `"123"`, `"123.4"`, `"123.45"`; rejected: negative, >2 decimals, comma separator, non-numeric, empty, above the 2,147,483,647-kuruş storage bound; zero valid).
