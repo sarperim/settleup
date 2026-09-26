@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same PR cancels the now-outdated run (saves minutes)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Lint, test & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Step 3+ needs a real database: PostgreSQL as a service container.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: settleup
+          POSTGRES_PASSWORD: settleup
+          POSTGRES_DB: settleup_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U settleup"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://settleup:settleup@localhost:5432/settleup_test
+      E2E_DATABASE_URL: postgresql://settleup:settleup@localhost:5432/settleup_e2e
+
+    steps:
+      # ── Step 1: Set up ────────────────────────────────────────────
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install Node 24 (with pnpm cache)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter api exec prisma generate
+
+      # ── Step 2: Quality gates ─────────────────────────────────────
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # ── Step 3: Test (unit + integration on real Postgres) ────────
+      - name: Apply migrations to test database
+        run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Unit & integration tests
+        run: pnpm test
+
+      # ── Step 4: Build & E2E smoke ─────────────────────────────────
+      - name: Build
+        run: pnpm build
+
+      - name: Create E2E database & apply migrations
+        run: |
+          psql "$DATABASE_URL" -c "CREATE DATABASE settleup_e2e;"
+          pnpm --filter api exec prisma migrate deploy --schema prisma/schema.prisma
+        env:
+          DATABASE_URL: postgresql://settleup:settleup@localhost:5432/settleup_e2e
+
+      - name: E2E smoke tests (Playwright)
+        run: pnpm test:e2e
+
+      - name: Upload build artifact
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build
+          path: |
+            apps/api/dist
+            apps/web/dist
+          retention-days: 7

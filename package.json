@@ -11,7 +11,7 @@
     "lint": "pnpm -r run lint",
     "typecheck": "pnpm -r run typecheck",
     "build": "pnpm -r --sort run build",
-    "test": "node scripts/test-stub.mjs",
+    "test": "vitest run",
     "test:e2e": "node scripts/e2e-stub.mjs"
   },
   "devDependencies": {
