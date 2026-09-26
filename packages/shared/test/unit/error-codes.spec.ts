@@ -55,9 +55,19 @@ describe('TKT-foundation-003 explicit criteria — error codes & purity', () => 
 
   it('criterion 3 — the shared package declares no runtime dependencies (pure code, arch 01 §2 C6)', () => {
     // The JSON import's inferred type mirrors the file exactly (no
-    // `dependencies` key exists today); read it through the optional-key
-    // view the assertion actually checks.
-    const { dependencies } = sharedPkg as { dependencies?: Record<string, string> };
+    // dependency key exists today); read it through the optional-key view
+    // the assertions actually check. All three dependency maps count:
+    // pnpm auto-installs peers of workspace packages and installs
+    // optional dependencies unless explicitly omitted, so "pure code"
+    // requires all of them empty.
+    const { dependencies, peerDependencies, optionalDependencies } =
+      sharedPkg as {
+        dependencies?: Record<string, string>;
+        peerDependencies?: Record<string, string>;
+        optionalDependencies?: Record<string, string>;
+      };
     expect(Object.keys(dependencies ?? {})).toEqual([]);
+    expect(Object.keys(peerDependencies ?? {})).toEqual([]);
+    expect(Object.keys(optionalDependencies ?? {})).toEqual([]);
   });
 });
