@@ -32,9 +32,13 @@ export interface CreateHttpAppOptions {
   webRoot?: string;
   /**
    * Pre-validated config (review round 2, F-K-4): the production boot
-   * validates once in `bootstrap()` and passes the result through, so the
-   * whole boot runs on a single `loadEnv()` call. Callers that omit it
-   * (tests) get `process.env` validated here.
+   * validates in `bootstrap()` and passes the result through, so this
+   * factory no longer re-validates. The `APP_CONFIG` provider still runs
+   * one `loadEnv(process.env)` during `app.init()` — the fail-fast net
+   * for consumers that construct the app without going through
+   * `bootstrap()` — so a production boot validates env twice in total
+   * (review round 2, F-K2-1). Callers that omit it (tests) get
+   * `process.env` validated here.
    */
   env?: AppConfig;
 }

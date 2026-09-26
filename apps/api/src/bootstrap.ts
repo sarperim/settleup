@@ -14,8 +14,12 @@ import { loadEnv } from './config/env';
  * Returns the running application so callers/tests can close it.
  */
 export async function bootstrap(): Promise<NestExpressApplication> {
-  // Validate once and thread the result through the factory (review round 2,
-  // F-K-4): previously the factory re-validated `process.env` a second time.
+  // Validate here and thread the result through the factory (review round 2,
+  // F-K-4): the factory no longer re-validates `process.env` itself. The
+  // `APP_CONFIG` provider still runs one `loadEnv(process.env)` during
+  // `app.init()` — the fail-fast net for consumers that construct the app
+  // without going through `bootstrap()` — so a production boot validates
+  // env twice (review round 2, F-K2-1).
   const env = loadEnv(process.env);
   const app = await createHttpApp({ env });
   // SIGTERM (deploy restarts, container stop) runs the destroy lifecycle:
