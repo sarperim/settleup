@@ -46,3 +46,11 @@
 - F-6 (lenient envelope parsing): **fixed** — `parseErrorEnvelope` requires a string `message` (else `null` → INTERNAL fallback) and treats array `details` like non-object details (omitted, never surfaced); specs extended.
 - F-7 (hand-typed patterns, uncommented catch-all): **fixed** — `routes.ts` exports `SPA_ROUTE_PARAMS` and composes `SPA_ROUTE_PATTERNS` from it; `App.tsx` route props use the constants; the catch-all carries the §6 protected-route row (UC-ACC-006) rationale.
 - Gates after fixes: lint ✓, typecheck ✓, root `pnpm test` 26/26 ✓, `pnpm --filter web test` 47/47 ✓ (45 + F-5/F-6 specs), `pnpm build` 84.30 kB gzip ≤ 300 KB ✓.
+
+**ROUND 2 (review-lead, 2026-09-26 — artifact: `.pipeline/plan/reviews/TKT-foundation-005-round-2.md`):**
+
+- Pass 2 (fix-verification): compliance **CLEAN**, code **CLEAN**, security **CLEAN** — all three lanes dispatched in parallel on head `86cb739`.
+- F-1 verified-fixed independently by two lanes (mutation tests re-run: breaking `/`, `/groups/:groupId`, `/change-password`, `/join/:code`, `/groups/:groupId/expenses/new` wiring each fails exactly the right spec cases). F-2, F-4, F-5, F-6, F-7 all verified-fixed; F-3/F-8/C-1/C-2/C-3 routings stand.
+- One new nit F-9 (tautological sync test in `routes.spec.ts:33-38`, side effect of the F-7 fix — non-blocking, no drift-protection loss; fold into a follow-up).
+- Gates on head: lint ✓, typecheck ✓, root `pnpm test` 26/26 ✓, `pnpm --filter web test` 47/47 ✓, `pnpm build` 84.30 kB gzip ≤ 300 KB ✓, CI green.
+- **Zero open blocking findings → MERGEABLE. Loop ended early on a clean pass 2.**
