@@ -1,0 +1,152 @@
+// Reference schema — 02-data-model.md §4 (transcribed field-for-field).
+// Prisma Migrate is the single source of schema truth (§11).
+
+// NOTE (TKT-foundation-002, FLAG-1): 02-data-model.md §4 renders the
+// generator header and the enums on a single line
+// ("generator client { provider = ... }", "enum SplitType { EQUAL EXACT }");
+// Prisma's grammar requires block contents on their own lines and rejects
+// the one-line forms (P1012 "not a valid definition within a generator" /
+// "This line is not an enum value definition"). Normalized here to
+// one-setting-per-line / one-value-per-line — generator, enum names,
+// enum values, and enum order are unchanged.
+// Recommended amendment to 02 §4: same normalization (architect).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SplitType {
+  EQUAL
+  EXACT
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  SETTLED
+  UNDONE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique              // lowercased at write; login identifier (login lowercases its input before lookup too — 03 §1)
+  passwordHash String                         // Argon2id (m=19456, t=2, p=1)
+  displayName  String                         // 1–50 chars; identity shown in groups (FR-ACC-008)
+  createdAt    DateTime @default(now())
+
+  sessions             Session[]
+  memberships          Membership[]
+  joinRequests         JoinRequest[]
+  createdGroups        Group[]          @relation("GroupCreator")
+  loggedExpenses       Expense[]        @relation("ExpenseLogger")
+  paidExpenses         Expense[]        @relation("ExpensePayer")
+  expenseShares        ExpenseShare[]
+  paymentsMade         SettledPayment[] @relation("PaymentPayer")
+  paymentsReceived     SettledPayment[] @relation("PaymentRecipient")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique              // SHA-256 of the 256-bit cookie token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime                      // sliding 30 days
+
+  @@index([userId, expiresAt])
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String                          // 1–100 chars (OQ-GRP-003 resolution)
+  joinCode  String   @unique                // 8-char Crockford base32, CSPRNG (NFR-GRP-005)
+  creatorId String
+  creator   User     @relation("GroupCreator", fields: [creatorId], references: [id])
+  createdAt DateTime @default(now())
+
+  memberships     Membership[]
+  joinRequests    JoinRequest[]
+  expenses        Expense[]
+  settledPayments SettledPayment[]
+}
+
+model JoinRequest {
+  id        String            @id @default(cuid())
+  groupId   String
+  group     Group             @relation(fields: [groupId], references: [id])
+  userId    String
+  user      User              @relation(fields: [userId], references: [id])
+  status    JoinRequestStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  decidedAt DateTime?               // set on approve/reject; cleared on re-request
+
+  @@unique([groupId, userId])        // FR-GRP-012 + re-request semantics (§5.3)
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  isCreator Boolean                       // BR-GRP-005; creator row created with the group
+  joinedAt  DateTime @default(now())
+
+  @@unique([groupId, userId])             // BR-GRP-008 permanence: no delete path
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  groupId     String
+  group       Group     @relation(fields: [groupId], references: [id])
+  description String                          // 1–200 chars
+  amountKurus Int                            // ≥ 0; ≤ 2,147,483,647 (§8)
+  payerId     String
+  payer       User      @relation("ExpensePayer", fields: [payerId], references: [id])
+  splitType   SplitType
+  loggerId    String
+  logger      User      @relation("ExpenseLogger", fields: [loggerId], references: [id])
+  createdAt   DateTime  @default(now())
+  editedAt    DateTime?                      // absent until first edit (BR-EXP-008)
+
+  shares ExpenseShare[]
+
+  @@index([groupId, createdAt])              // expense list ordering: newest first
+}
+
+model ExpenseShare {
+  id            String  @id @default(cuid())
+  expenseId     String
+  expense       Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   User    @relation(fields: [participantId], references: [id])
+  shareKurus    Int                          // ≥ 0; zero-kuruş exact shares allowed (OQ-EXP-003)
+
+  @@unique([expenseId, participantId])
+  @@index([participantId])                    // balance aggregation
+}
+
+model SettledPayment {
+  id          String        @id @default(cuid())
+  groupId     String
+  group       Group         @relation(fields: [groupId], references: [id])
+  payerId     String
+  payer       User          @relation("PaymentPayer", fields: [payerId], references: [id])
+  recipientId String
+  recipient   User          @relation("PaymentRecipient", fields: [recipientId], references: [id])
+  amountKurus Int                            // 1..2,147,483,647 (a payment of 0 is meaningless)
+  status      PaymentStatus @default(SETTLED)
+  paidAt      DateTime      @default(now())
+  undoneAt    DateTime?                     // set on undo; row retained forever (NFR-BAL-005)
+
+  @@index([groupId, status])
+}
