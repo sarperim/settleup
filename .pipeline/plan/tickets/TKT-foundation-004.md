@@ -1,6 +1,6 @@
 # TKT-foundation-004: API platform — bootstrap, error contract, CSRF, logging, static SPA
 
-- Status: in-review
+- Status: done (merged via PR #6 → dev, 2026-09-26; review loop closed clean at pass 3 after two user-directed fix rounds — prior agent-round fixes F-1…F-5/F-7 verified at pass 1, F-6 closed unrecoverable/no-trace per user; artifacts in .pipeline/plan/reviews/TKT-foundation-004-round-{1,2,3}.md)
 - PR: https://github.com/sarperim/settleup/pull/6 (base: dev)
 - Size: M
 - Scope: **Create/modify** `apps/api/src/**` — the cross-cutting platform every domain module (C2–C5) sits on:

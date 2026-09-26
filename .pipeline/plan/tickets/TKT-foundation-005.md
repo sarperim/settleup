@@ -1,6 +1,6 @@
 # TKT-foundation-005: SPA shell — router, layout, API client
 
-- Status: in-review
+- Status: done (merged via PR #5 → dev, 2026-09-26; review loop closed clean at pass 2 — artifacts in .pipeline/plan/reviews/TKT-foundation-005-round-{1,2}.md)
 - PR: https://github.com/sarperim/settleup/pull/5 (base: dev)
 - Size: M
 - Scope: **Create** `apps/web/src/**` (beyond the TKT-foundation-001 placeholder) and **modify** `apps/web/vite.config.ts`:
