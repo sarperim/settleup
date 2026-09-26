@@ -1,6 +1,6 @@
 # TKT-foundation-001: Monorepo scaffolding & dependency baseline
 
-- Status: in-review
+- Status: done (merged via PR #1 → master, 2026-09-26; review loop closed clean at round 2 — artifacts in .pipeline/plan/reviews/TKT-foundation-001-round-{1,2}.md)
 - PR: https://github.com/sarperim/settleup/pull/1
 - Size: M
 - Scope: **Create** the pnpm-workspace monorepo exactly as laid out in 01-system-architecture.md §1:
