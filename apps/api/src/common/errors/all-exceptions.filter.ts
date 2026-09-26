@@ -11,7 +11,10 @@
  *     bare `ForbiddenException`) folds to `500 INTERNAL` — `INTERNAL` is
  *     500-only in §4 — and its original status is logged server-side;
  *   - unexpected faults become `500 INTERNAL` with a generic message and are
- *     logged (with the request id) server-side.
+ *     logged (with the request id) server-side;
+ *   - body-parser's `PayloadTooLargeError` (request body over the 100 kb
+ *     limit) is a client-input fault: it maps to `400 VALIDATION_FAILED`
+ *     (§4 has no 413 code), never to a logged/classified `500 INTERNAL`.
  */
 import {
   ArgumentsHost,
@@ -97,12 +100,38 @@ function resolve(exception: unknown): ResolvedError {
     return mapStatus(exception.getStatus());
   }
 
+  if (isPayloadTooLargeError(exception)) {
+    return {
+      status: HttpStatus.BAD_REQUEST,
+      code: 'VALIDATION_FAILED',
+      message: DEFAULT_MESSAGES.VALIDATION_FAILED,
+      internal: false,
+    };
+  }
+
   return {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     code: 'INTERNAL',
     message: DEFAULT_MESSAGES.INTERNAL,
     internal: true,
   };
+}
+
+/**
+ * body-parser's `PayloadTooLargeError` (request body over Express's 100 kb
+ * limit) is a plain `Error` tagged `statusCode: 413` — not an `HttpException`,
+ * and Nest pre-wraps only body-parser `SyntaxError`s (malformed JSON), so it
+ * reaches this filter raw. §4 has no 413 code; the deliberate fold is
+ * `400 VALIDATION_FAILED` (same family as malformed JSON), so a client-input
+ * fault is never classified — or logged — as a server fault.
+ */
+function isPayloadTooLargeError(exception: unknown): boolean {
+  return (
+    typeof exception === 'object' &&
+    exception !== null &&
+    (exception as { statusCode?: unknown }).statusCode ===
+      HttpStatus.PAYLOAD_TOO_LARGE
+  );
 }
 
 /**
