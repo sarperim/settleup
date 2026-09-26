@@ -87,8 +87,17 @@ jobs:
         run: pnpm build
 
       - name: Create E2E database & apply migrations
+        # NOTE (TKT-foundation-007, review round 1 / C-2): psql cannot
+        # connect TO the database it is creating — §4's step points
+        # DATABASE_URL at settleup_e2e and then CREATEs settleup_e2e,
+        # which deterministically fails ("database does not exist").
+        # The CREATE now connects to the always-present maintenance DB
+        # (`postgres`); the migrate below still targets settleup_e2e via
+        # this step's env. Deviation from 04-ci-pipeline.md §4 verbatim
+        # (the doc carries the same bug); doc amendment routed to the
+        # architect.
         run: |
-          psql "$DATABASE_URL" -c "CREATE DATABASE settleup_e2e;"
+          psql "postgresql://settleup:settleup@localhost:5432/postgres" -c "CREATE DATABASE settleup_e2e;"
           pnpm --filter api exec prisma migrate deploy --schema prisma/schema.prisma
         env:
           DATABASE_URL: postgresql://settleup:settleup@localhost:5432/settleup_e2e
