@@ -25,8 +25,8 @@ export interface ParsedErrorEnvelope {
 /**
  * Parse an unknown response body as the §4 error envelope. Returns `null`
  * when the body is not a well-formed envelope (missing `error`, unknown
- * `code`, wrong shapes) — the caller then falls back to a generic
- * `INTERNAL` error rather than surfacing an untrusted payload.
+ * `code`, non-string `message`, wrong shapes) — the caller then falls back
+ * to a generic `INTERNAL` error rather than surfacing an untrusted payload.
  */
 export function parseErrorEnvelope(body: unknown): ParsedErrorEnvelope | null {
   if (typeof body !== 'object' || body === null || !('error' in body)) {
@@ -40,11 +40,22 @@ export function parseErrorEnvelope(body: unknown): ParsedErrorEnvelope | null {
   if (!isErrorCode(candidate.code)) {
     return null;
   }
+  // `message` is a required string in the frozen ErrorEnvelopeDto — a
+  // non-string message means the body is not the contract envelope.
+  if (typeof candidate.message !== 'string') {
+    return null;
+  }
   const parsed: ParsedErrorEnvelope = {
     code: candidate.code,
-    message: typeof candidate.message === 'string' ? candidate.message : '',
+    message: candidate.message,
   };
-  if (typeof candidate.details === 'object' && candidate.details !== null) {
+  // `details` is an optional record; anything that is not a plain object
+  // (strings, numbers, arrays) is treated as absent, never surfaced.
+  if (
+    typeof candidate.details === 'object' &&
+    candidate.details !== null &&
+    !Array.isArray(candidate.details)
+  ) {
     parsed.details = candidate.details as ErrorDetails;
   }
   return parsed;

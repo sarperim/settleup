@@ -63,10 +63,24 @@ describe('parseErrorEnvelope', () => {
     expect(parseErrorEnvelope({ error: { code: 'SOMETHING_ELSE', message: 'x' } })).toBeNull();
   });
 
-  it('omits non-object details', () => {
-    const parsed = parseErrorEnvelope({ error: { code: 'INTERNAL', message: 'x', details: 'nope' } });
-    expect(parsed).toEqual({ code: 'INTERNAL', message: 'x' });
-    expect(parsed).not.toHaveProperty('details');
+  it('returns null for a missing or non-string message', () => {
+    expect(parseErrorEnvelope({ error: { code: 'NOT_FOUND' } })).toBeNull();
+    expect(parseErrorEnvelope({ error: { code: 'NOT_FOUND', message: 42 } })).toBeNull();
+    expect(parseErrorEnvelope({ error: { code: 'NOT_FOUND', message: null } })).toBeNull();
+  });
+
+  it('omits non-object and array details', () => {
+    const stringDetails = parseErrorEnvelope({
+      error: { code: 'INTERNAL', message: 'x', details: 'nope' },
+    });
+    expect(stringDetails).toEqual({ code: 'INTERNAL', message: 'x' });
+    expect(stringDetails).not.toHaveProperty('details');
+
+    const arrayDetails = parseErrorEnvelope({
+      error: { code: 'INTERNAL', message: 'x', details: ['email'] },
+    });
+    expect(arrayDetails).toEqual({ code: 'INTERNAL', message: 'x' });
+    expect(arrayDetails).not.toHaveProperty('details');
   });
 });
 
