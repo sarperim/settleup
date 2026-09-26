@@ -1,6 +1,6 @@
 # TKT-foundation-005: SPA shell — router, layout, API client
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Create** `apps/web/src/**` (beyond the TKT-foundation-001 placeholder) and **modify** `apps/web/vite.config.ts`:
   - React Router setup with the 03-api-design.md §6 route table as placeholder pages: `/register`, `/login`, `/`, `/groups/:groupId` (Expenses / Balances / Settle-up / Members tab placeholders), `/groups/:groupId/expenses/new`, `/groups/:groupId/expenses/:expenseId/edit`, `/join/:code`, `/change-password`.
