@@ -84,7 +84,11 @@ jobs:
 
       # ── Step 3: Test (unit + integration on real Postgres) ────────
       - name: Apply migrations to test database
-        run: pnpm --filter api exec prisma migrate deploy
+        # `--schema` is explicit on both migrate deploy invocations for
+        # consistency (review round 1 / C-7) — semantically neutral: it
+        # resolves to apps/api/prisma/schema.prisma either way (cwd =
+        # apps/api under `pnpm --filter api exec`). §4 omits it here.
+        run: pnpm --filter api exec prisma migrate deploy --schema prisma/schema.prisma
 
       - name: Unit & integration tests
         run: pnpm test
