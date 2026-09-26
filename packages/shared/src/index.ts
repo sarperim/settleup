@@ -1,5 +1,6 @@
 /**
- * @settleup/shared — the frozen contract package (TKT-foundation-003).
+ * `shared` (the workspace package name) — the frozen contract package
+ * (TKT-foundation-003).
  *
  * Pure code, no I/O, no runtime dependencies (arch 01-system-architecture.md
  * §2 C6); imported by `apps/api` and `apps/web`. Single source of truth for:
