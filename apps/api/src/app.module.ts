@@ -1,10 +1,15 @@
 import { Module } from '@nestjs/common';
+import { AppConfigModule } from './config/config.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 /**
- * Root application module (skeleton — TKT-foundation-001).
+ * Root application module (TKT-foundation-004).
  *
- * Domain modules (Auth C2, Groups C3, Ledger C4, Settlement C5) are added by
- * their owning tickets. TKT-foundation-004 wires the platform-level pieces.
+ * Platform-level pieces only: validated configuration and the single Prisma
+ * client. Domain modules (Auth C2, Groups C3, Ledger C4, Settlement C5) are
+ * added by their owning tickets and import these globals.
  */
-@Module({})
+@Module({
+  imports: [AppConfigModule, PrismaModule],
+})
 export class AppModule {}
