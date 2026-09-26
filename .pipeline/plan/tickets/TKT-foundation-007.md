@@ -1,6 +1,7 @@
 # TKT-foundation-007: CI pipeline & unit-test runner bootstrap
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/2 (base: dev — user-directed)
 - Size: S
 - Scope: **Create** the GitHub Actions workflow and the first real test-runner wiring, so that every ticket from here on is CI-checked (user decision at Gate 1 — CI lands early, not last):
   - `.github/workflows/ci.yml` — verbatim per 04-ci-pipeline.md §4, **complete and final from day one** (4 logical steps, Postgres 17 service container, env, concurrency, artifact upload; calls only the §3 root scripts).
