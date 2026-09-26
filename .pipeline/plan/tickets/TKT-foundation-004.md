@@ -1,6 +1,7 @@
 # TKT-foundation-004: API platform — bootstrap, error contract, CSRF, logging, static SPA
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/6 (base: dev)
 - Size: M
 - Scope: **Create/modify** `apps/api/src/**` — the cross-cutting platform every domain module (C2–C5) sits on:
   - Nest bootstrap (`main.ts`): helmet, cookie-parser, Express `trust proxy` (the Caddy hop — arch §8.2), global `/api` prefix.
@@ -24,3 +25,19 @@
 - Parallel group: P-2 (with TKT-foundation-005 — verified disjoint: this ticket writes `apps/api/**` only; TKT-foundation-005 writes `apps/web/**` only)
 
 **Audit note:** lockfile-eligible ticket of P-2 — if a dependency outside the TKT-foundation-001 baseline is genuinely required (e.g. the validation library), only this ticket may add it; TKT-foundation-005 may not.
+
+**Flagged during implementation (recorded for the review loop):**
+
+- FLAG-1 (pipeline / build ordering — routed to architect + planner): `packages/shared` exposes only its compiled `dist/` (`main`/`types`), and neither `pnpm typecheck` nor `pnpm test` runs after `pnpm build` in CI (build is step 4). Importing `shared` from `apps/api/src` therefore fails with `TS2307`/module-not-found at the typecheck step and at Vitest runtime. To keep this PR green pre-build, the platform defines its own `API_ERROR_CODES`/`ApiErrorCode`/`ErrorDetails` in `src/common/errors/error-contract.ts`, mirroring `packages/shared/src/errors.ts` exactly. The runtime values are the contract and are asserted by tests; the duplication is a build-ordering workaround, not a redefinition. The right fix (build `shared` before typecheck/test, or point api/test resolution at `shared` sources) belongs to the pipeline, not this ticket.
+- FLAG-2 (contract shape — routed to architect): 03-api-design.md §4 says `VALIDATION_FAILED.details` "lists offending fields" but does not pin the shape. This ticket implements `details: { fields: string[] }` (leaf DTO property paths). Domain test plans phrase it loosely ("details name `password`", groups "details name `code`"); the exact shape they assert against must be confirmed before those tickets land. Service-level errors keep the documented per-code detail (e.g. `EMAIL_TAKEN` → `details: { field: 'email' }`).
+- FLAG-3 (test-harness gap — routed to TKT-foundation-006, the harness ticket): Vitest compiles with esbuild, which does **not** emit `design:paramtypes` (`emitDecoratorMetadata`). Production `nest build` (tsc) does. The scratch DTO-validation acceptance test (`tc-foundation-004-a3`) therefore injects the parameter metadata by hand to exercise the real global ValidationPipe. Unless TKT-foundation-006 enables decorator-metadata emission (e.g. an SWC-based transform), **every domain DTO-validation integration test will silently skip validation**. The platform wiring itself is correct (verified by the hand-injected-metadata test and by tsc-built production code).
+- DEVIATION-1 (lockfile — permitted): added devDependencies `@types/cookie-parser@^1.4.10` and `@types/supertest@^7.2.1` to `apps/api/package.json` (`pnpm-lock.yaml` updated). `cookie-parser` is in the f-001 baseline but shipped no types; `supertest` is a root devDependency the platform acceptance specs import. No runtime dependency added.
+- Dev-env note: local verification ran on Node v22.22.0 (repo pins `engines >=24`); CI runs Node 24. Same precedent as TKT-foundation-002.
+
+**Verification (local, this branch):**
+
+- `pnpm lint` ✅ · `pnpm typecheck` ✅ · `pnpm build` ✅ · `pnpm install --frozen-lockfile` ✅
+- `pnpm test` ✅ — 51 passed / 10 files (25 tests are new platform specs under `apps/api/test/unit/`).
+- Acceptance criteria → specs: (1) `tc-foundation-004-a1-boot-env.spec.ts` + `node dist/main.js` missing-env exit-1 boot check; (2) + (3) `tc-foundation-004-a2-csrf-error-envelope.spec.ts`; (3) `tc-foundation-004-a3-validation-internal.spec.ts`; (4) `tc-foundation-004-a4-static-spa.spec.ts` + real `apps/web/dist` boot check (`PORT=4273`); (5) `tc-foundation-004-a5-request-logging.spec.ts` + boot-check log lines.
+- Note: `apps/api/test/**` is not covered by the api `lint`/`typecheck` scripts (they glob `src/**/*.ts`) — the same test-dir coverage gap TKT-foundation-003 recorded; TKT-foundation-006 owns harness-level gating.
+
