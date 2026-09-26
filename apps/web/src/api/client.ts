@@ -17,6 +17,7 @@
  */
 
 import type { ErrorCode } from 'shared';
+import { SPA_ROUTES } from '../routes';
 import { ApiError, parseErrorEnvelope } from './errors';
 
 /** HTTP methods the wrapper sends. */
@@ -55,7 +56,7 @@ export interface ApiClient {
 
 function defaultUnauthenticatedRedirect(): void {
   if (typeof window !== 'undefined' && typeof window.location?.assign === 'function') {
-    window.location.assign('/login');
+    window.location.assign(SPA_ROUTES.login);
   }
 }
 

@@ -10,6 +10,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
+import { SPA_ROUTES } from '../routes';
 import { ApiError } from './errors';
 import {
   API_BASE_PATH,
@@ -170,5 +171,26 @@ describe('createApiClient — 401 handling', () => {
     const error = await client.post('/auth/login', {}).catch((e: unknown) => e);
     expect((error as ApiError).code).toBe('INVALID_CREDENTIALS');
     expect(onUnauthenticated).not.toHaveBeenCalled();
+  });
+
+  it('redirects to the SPA login route when no handler is injected (production default)', async () => {
+    // Node has no `window`; stub one so the default handler's browser
+    // redirect runs and can be observed.
+    const assign = vi.fn();
+    vi.stubGlobal('window', { location: { assign } });
+    try {
+      const fetchImpl = vi.fn(
+        async () => jsonResponse(401, { error: { code: 'UNAUTHENTICATED', message: 'No session.' } }),
+      ) as unknown as typeof fetch;
+      const client = createApiClient({ fetchImpl });
+
+      const error = await client.get('/groups').catch((e: unknown) => e);
+
+      expect((error as ApiError).code).toBe('UNAUTHENTICATED');
+      expect(assign).toHaveBeenCalledTimes(1);
+      expect(assign).toHaveBeenCalledWith(SPA_ROUTES.login);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
