@@ -1,6 +1,6 @@
 # TKT-foundation-007: CI pipeline & unit-test runner bootstrap
 
-- Status: in-review
+- Status: done (merged via PR #2 → dev, 2026-09-26; review loop closed clean at pass 3)
 - PR: https://github.com/sarperim/settleup/pull/2 (base: dev — user-directed)
 
 **Flagged during implementation (recorded for the review loop):**
