@@ -117,16 +117,19 @@ export function parseKurus(input: string): KurusParseResult {
  * Render integer kuruş as a 2-decimal TRY string: `12345 → "123.45"`,
  * `5 → "0.05"`, `0 → "0.00"`. Round-trips with `parseKurus`.
  *
- * Accepts a non-negative integer `Kurus` (the domain `parseKurus`
- * produces). Negative or fractional input is a programming error — a
- * `Kurus` can never legitimately be either — and throws a `RangeError`
- * rather than rendering nonsense. Signed derived balances are not `Kurus`;
- * format their magnitude and prepend the sign at the call site.
+ * Accepts a non-negative integer `Kurus` within the storage bound (the
+ * domain `parseKurus` produces: 0 … `KURUS_STORAGE_BOUND`). Negative,
+ * fractional, or above-bound input is a programming error — a legitimate
+ * `Kurus` is never any of these — and throws a `RangeError` rather than
+ * rendering an out-of-domain string that would only surface later, far
+ * from the cause, as an `ABOVE_STORAGE_BOUND` round-trip failure. Signed
+ * derived balances are not `Kurus`; format their magnitude and prepend
+ * the sign at the call site.
  */
 export function formatKurus(kurus: Kurus): string {
-  if (!Number.isInteger(kurus) || kurus < 0) {
+  if (!Number.isInteger(kurus) || kurus < 0 || kurus > KURUS_STORAGE_BOUND) {
     throw new RangeError(
-      `formatKurus: expected a non-negative integer kuruş amount, got ${String(kurus)}`,
+      `formatKurus: expected a non-negative integer kuruş amount within the storage bound (≤ ${KURUS_STORAGE_BOUND}), got ${String(kurus)}`,
     );
   }
   const wholePart = Math.floor(kurus / 100);
