@@ -2,6 +2,10 @@
 
 - Status: in-review
 - PR: https://github.com/sarperim/settleup/pull/2 (base: dev — user-directed)
+
+**Flagged during implementation (recorded for the review loop):**
+- FLAG-1 (sequencing): f-002/f-003 not merged — CI is green through install/lint/typecheck/unit but fails at `prisma generate` until f-002 lands its schema; acceptance #2's TCs await f-003.
+- DEVIATION-1 (CI-run mandated, first live run): `pnpm/action-setup@v4` errors "Multiple versions of pnpm specified" when its `version:` input coexists with the root `packageManager` pin (f-001 baseline). Removed the `version: 10` input; `packageManager` is the single source of truth. Recommended amendment to 04-ci-pipeline.md §4.
 - Size: S
 - Scope: **Create** the GitHub Actions workflow and the first real test-runner wiring, so that every ticket from here on is CI-checked (user decision at Gate 1 — CI lands early, not last):
   - `.github/workflows/ci.yml` — verbatim per 04-ci-pipeline.md §4, **complete and final from day one** (4 logical steps, Postgres 17 service container, env, concurrency, artifact upload; calls only the §3 root scripts).
