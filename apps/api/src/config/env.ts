@@ -132,6 +132,22 @@ function readString(raw: string | undefined): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+/**
+ * Strict decimal parsing for numeric variables (review round 2, F-K-3):
+ * `Number()` alone also accepts numeric-literal forms with no business in an
+ * environment file — hex (`0x10`), scientific notation (`1e3`), leading `+`.
+ * Only plain decimal digits parse; everything else is reported malformed.
+ * The `isInteger` check guards overflow: a digit string longer than the
+ * double-precision range parses to `Infinity`.
+ */
+function parseDecimal(raw: string): number | undefined {
+  if (!/^\d+$/.test(raw)) {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) ? parsed : undefined;
+}
+
 function readPort(
   raw: string | undefined,
   problems: string[],
@@ -141,8 +157,8 @@ function readPort(
     problems.push('missing required variable PORT');
     return undefined;
   }
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+  const parsed = parseDecimal(value);
+  if (parsed === undefined || parsed < 1 || parsed > 65535) {
     problems.push(`PORT must be an integer between 1 and 65535 (got "${value}")`);
     return undefined;
   }
@@ -176,8 +192,8 @@ function readPositiveInt(
   if (value === undefined) {
     return fallback;
   }
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed < 1) {
+  const parsed = parseDecimal(value);
+  if (parsed === undefined || parsed < 1) {
     problems.push(`${name} must be a positive integer (got "${value}")`);
     return fallback;
   }

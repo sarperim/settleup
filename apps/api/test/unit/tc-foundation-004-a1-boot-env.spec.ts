@@ -48,6 +48,26 @@ describe('env validation (arch. §8.5)', () => {
   it.each([
     ['PORT', { DATABASE_URL: TEST_DATABASE_URL, PORT: 'not-a-number' }],
     ['PORT', { DATABASE_URL: TEST_DATABASE_URL, PORT: '70000' }],
+    // Review round 2, F-K-3: numeric-literal forms are malformed env values —
+    // `Number()` would accept them ('0x50' boots on port 80, '1e3' on 1000).
+    ['PORT', { DATABASE_URL: TEST_DATABASE_URL, PORT: '0x50' }],
+    ['PORT', { DATABASE_URL: TEST_DATABASE_URL, PORT: '1e3' }],
+    [
+      'ARGON2_MEMORY_COST',
+      {
+        DATABASE_URL: TEST_DATABASE_URL,
+        PORT: '3007',
+        ARGON2_MEMORY_COST: '0x10',
+      },
+    ],
+    [
+      'ARGON2_PARALLELISM',
+      {
+        DATABASE_URL: TEST_DATABASE_URL,
+        PORT: '3007',
+        ARGON2_PARALLELISM: '1e2',
+      },
+    ],
     ['LOG_LEVEL', { DATABASE_URL: TEST_DATABASE_URL, PORT: '3007', LOG_LEVEL: 'shouty' }],
     ['ARGON2_MEMORY_COST', { DATABASE_URL: TEST_DATABASE_URL, PORT: '3007', ARGON2_MEMORY_COST: '-1' }],
     ['COOKIE_SECURE', { DATABASE_URL: TEST_DATABASE_URL, PORT: '3007', COOKIE_SECURE: 'maybe' }],
