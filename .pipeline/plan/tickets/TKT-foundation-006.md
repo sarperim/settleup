@@ -30,7 +30,7 @@
   2. `pnpm test` with `DATABASE_URL` unset → unit `Tests 70 passed (14 files)`; integration canary `FAIL` with the explicit "requires DATABASE_URL" message; exit 1.
   3. Deliberately breaking the canary (404 → 500) → `Tests 2 failed | 70 passed`, exit 1; reverted (clean tree).
   4. `DROP DATABASE settleup_e2e` then `pnpm build && E2E_DATABASE_URL=… pnpm test:e2e` → script creates + migrates the fresh DB, Playwright boots `apps/api/dist/main.js` serving the built SPA, `1 passed`, exit 0.
-  5. CI on the PR — recorded below once the run completes; no workflow-file change.
+  5. CI on the PR — **green** (run [36249992805](https://github.com/sarperim/settleup/actions/runs/36249992805), all steps incl. "E2E smoke tests (Playwright)" passed; **no workflow-file change**).
   6. `pnpm lint` exit 0; `pnpm typecheck` exit 0.
 - DEVIATION-1 (root `test:e2e`): it runs `playwright install chromium` before `playwright test`. pnpm's `onlyBuiltDependencies` allowlist (`pnpm-workspace.yaml`) blocks Playwright's postinstall and the frozen `ci.yml` has no browser-install step, so CI would otherwise have no browser to launch. Alternative (allow-listing `playwright`) edits `pnpm-workspace.yaml`, outside this ticket's stated root-`package.json` scope.
 - DEVIATION-2 (e2e DB setup): `scripts/e2e-db.mjs` performs 04 §4 step 4's "create E2E database & apply migrations" idempotently. In CI the frozen workflow's step already ran, so the create is skipped and `prisma migrate deploy` is a no-op; locally the script is the only setup. Mirrors TKT-foundation-007 DEVIATION-3's maintenance-DB create fix.
