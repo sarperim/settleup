@@ -2,7 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # NOTE (TKT-foundation-007, review round 1 / C-1, user decision
+    # 2026-09-26): this repo's trunk is `master` — no `main` branch exists
+    # or will exist. 04-ci-pipeline.md §4 assumes `main`; the push trigger
+    # here and the artifact gate below are retargeted to `master`.
+    # Deviation from §4 verbatim; doc amendment routed to the architect.
+    branches: [master]
   pull_request:
 
 # A new push to the same PR cancels the now-outdated run (saves minutes)
@@ -92,7 +97,8 @@ jobs:
         run: pnpm test:e2e
 
       - name: Upload build artifact
-        if: github.ref == 'refs/heads/main'
+        # Trunk is `master` — see the push-trigger note above (C-1).
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v4
         with:
           name: app-build
