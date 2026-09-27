@@ -1,6 +1,6 @@
 # TKT-groups-001: Groups module core — creation, join-code generator, read models, guards
 
-- Status: in-progress
+- Status: in-review (PR #16)
 - Size: M
 - Scope: **Create** `apps/api/src/groups/**` (the C3 Groups module) and its specs:
   - Join-code generator: 8-char Crockford base32 (`0123456789ABCDEFGHJKMNPQRSTVWXYZ`) from an **injectable CSPRNG source** (arch §3 rule 3 — pure, unit-testable with a seeded PRNG).
