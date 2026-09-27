@@ -16,6 +16,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { createHttpApp } from '../../../src/app.factory';
 import { PrismaService } from '../../../src/prisma/prisma.service';
+import { LoginThrottleService } from '../../../src/auth/login-throttle.service';
 
 /** A booted integration app plus the handles specs need. */
 export interface IntegrationApp {
@@ -25,6 +26,13 @@ export interface IntegrationApp {
   readonly prisma: PrismaService;
   /** The Node http server supertest drives. */
   readonly server: Server;
+  /**
+   * Reset C2's in-memory login-throttle counters (accounts-access.md §2
+   * conventions: the required auth-module testability hook). The counters are
+   * not database state, so truncation alone would leak (email, IP) keys across
+   * tests; every spec that exercises login calls this in `beforeEach`.
+   */
+  resetLoginThrottle(): void;
 }
 
 /**
@@ -35,10 +43,12 @@ export interface IntegrationApp {
 export async function createIntegrationApp(): Promise<IntegrationApp> {
   const app = await createHttpApp();
   const prisma = app.get(PrismaService);
+  const throttle = app.get(LoginThrottleService);
   return {
     app,
     prisma,
     server: app.getHttpServer() as Server,
+    resetLoginThrottle: () => throttle.reset(),
   };
 }
 

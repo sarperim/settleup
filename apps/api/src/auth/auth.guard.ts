@@ -15,7 +15,8 @@ import { Reflector } from '@nestjs/core';
 import { AppError } from '../common/errors/app-error';
 import { DEFAULT_MESSAGES } from '../common/errors/error-contract';
 import type { RequestWithContext } from '../common/http/request-context';
-import { IS_PUBLIC_KEY, SESSION_COOKIE_NAME } from './auth.constants';
+import { IS_PUBLIC_KEY } from './auth.constants';
+import { readSessionToken } from './session-cookie';
 import { SessionService } from './session.service';
 
 @Injectable()
@@ -48,13 +49,6 @@ export class AuthGuard implements CanActivate {
     request.user = { id: session.userId };
     return true;
   }
-}
-
-function readSessionToken(request: RequestWithContext): string | undefined {
-  const raw = (request as { cookies?: Record<string, unknown> }).cookies?.[
-    SESSION_COOKIE_NAME
-  ];
-  return typeof raw === 'string' && raw.length > 0 ? raw : undefined;
 }
 
 function unauthenticated(): AppError {
