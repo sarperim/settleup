@@ -1,7 +1,18 @@
 import { defineConfig } from 'vitest/config';
+import swc from 'unplugin-swc';
 
 // TKT-foundation-006: the final Vitest runner — unit + integration projects
 // (00-test-strategy.md §2/§8, 04-ci-pipeline.md §3 `pnpm test`).
+//
+// Acceptance F-1 fix (2026-09-27, user-directed): Vitest compiles TS with
+// esbuild, which does NOT emit `design:paramtypes` (`emitDecoratorMetadata`),
+// while production `nest build` (tsc) does. NestJS's global ValidationPipe
+// reads that metadata to pick the DTO class; without it, DTO validation is
+// silently skipped under Vitest. The SWC transform below reads
+// `apps/api/tsconfig.json` (`emitDecoratorMetadata: true,
+// experimentalDecorators: true`) and emits the metadata under Vitest, matching
+// production semantics. Removing it re-opens the dropped f-004 FLAG-3 gap
+// (pinned by apps/api/test/unit/harness.decorator-metadata.spec.ts).
 //
 //   - `unit`        — packages/shared/test/unit and apps/api/test/unit. Pure:
 //                     no DATABASE_URL, no HTTP (strategy §2). TKT-foundation-007
@@ -22,6 +33,7 @@ export default defineConfig({
   test: {
     projects: [
       {
+        plugins: [swc.vite()],
         test: {
           name: 'unit',
           include: [
@@ -31,6 +43,7 @@ export default defineConfig({
         },
       },
       {
+        plugins: [swc.vite()],
         test: {
           name: 'integration',
           include: ['apps/api/test/integration/**/*.spec.ts'],
