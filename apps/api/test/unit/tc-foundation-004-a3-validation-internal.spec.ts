@@ -43,22 +43,14 @@ class ProbeController {
 class ProbeModule {}
 
 /**
- * Vitest compiles with esbuild, which does not emit `design:paramtypes`
- * (`emitDecoratorMetadata`); production `nest build` (tsc) does. Inject the
- * parameter metadata by hand so the real global ValidationPipe sees the DTO
- * type — the one thing the test compiler cannot provide.
- *
- * FLAG (TKT-foundation-004): the integration harness (TKT-foundation-006) must
- * enable decorator-metadata emission (e.g. an SWC-based transform) or every
- * domain DTO-validation test will silently skip validation under Vitest.
+ * The Vitest harness now emits decorator metadata via the SWC transform in
+ * `vitest.config.ts` (acceptance F-1 fix, 2026-09-27; closes TKT-foundation-004
+ * FLAG-3). This spec previously hand-injected `design:paramtypes` because
+ * esbuild does not emit it; that workaround is gone, so this spec exercises the
+ * real global ValidationPipe over compiler-emitted metadata exactly as
+ * production `nest build` (tsc) does. The gap is separately pinned by
+ * `harness.decorator-metadata.spec.ts`.
  */
-Reflect.defineMetadata(
-  'design:paramtypes',
-  [ProbeDto],
-  ProbeController.prototype,
-  'create',
-);
-
 const CSRF_HEADER = { 'X-Requested-With': 'XMLHttpRequest' };
 
 let restore: () => void;
