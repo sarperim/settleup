@@ -1,6 +1,6 @@
 # TKT-accounts-001: Registration & session establishment (C2 core)
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Create** `apps/api/src/auth/**` (the C2 Auth module) and its specs under `apps/api/test/**`:
   - `POST /api/auth/register` — field validation (email, password 8–128 per D-ARCH-003, displayName 1–50), email lowercased at write, duplicate → `409 EMAIL_TAKEN` with `details.field = "email"`, Argon2id hash (m=19456, t=2, p=1), User + Session created, session cookie set, `201 { user }` (FR-ACC-001/002/010).
