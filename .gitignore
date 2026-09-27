@@ -1,5 +1,6 @@
 # Pipeline plan views (regenerable — source of record is the ticket files' Status fields)
 .pipeline/plan/board.md
+.pipeline/plan/run-report.md
 .pipeline/plan/reviews/
 
 # ── Monorepo build & tooling (TKT-foundation-001 baseline) ──────────────
