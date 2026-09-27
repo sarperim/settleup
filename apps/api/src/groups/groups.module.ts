@@ -11,7 +11,9 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { GroupsController } from './groups.controller';
+import { JoinFlowController } from './join-flow.controller';
 import { GroupsService } from './groups.service';
+import { JoinRequestService } from './join-request.service';
 import { MembershipService } from './membership.service';
 import { CryptoRandomSource, RANDOM_SOURCE } from './random-source';
 import { GroupMemberGuard } from './guards/group-member.guard';
@@ -19,9 +21,10 @@ import { GroupCreatorGuard } from './guards/group-creator.guard';
 
 @Module({
   imports: [AuthModule],
-  controllers: [GroupsController],
+  controllers: [GroupsController, JoinFlowController],
   providers: [
     GroupsService,
+    JoinRequestService,
     MembershipService,
     { provide: RANDOM_SOURCE, useClass: CryptoRandomSource },
     GroupMemberGuard,
