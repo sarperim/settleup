@@ -1,6 +1,6 @@
 # TKT-accounts-004: Cross-route auth contract — CSRF, envelope, logs, retention
 
-- Status: todo
+- Status: in-review
 - Size: S
 - Scope: **Create** specs under `apps/api/test/integration/**` (and the log-capture testability hook in the test bootstrap) — the cross-route contract assertions that only become executable once all four auth routes exist:
   - TC-ACC-014 — CSRF header required on all 4 auth state-changing routes (register, login, logout, password), no side effects.
