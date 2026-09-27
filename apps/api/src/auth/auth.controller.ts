@@ -22,6 +22,7 @@ import type { RequestWithContext } from '../common/http/request-context';
 import { Public } from './public.decorator';
 import { AuthService, type UserProfile } from './auth.service';
 import { readSessionToken, setSessionCookie } from './session-cookie';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -67,6 +68,26 @@ export class AuthController {
     if (token !== undefined) {
       await this.auth.logout(token);
     }
+  }
+
+  /**
+   * Change the acting user's password (FR-ACC-006/007): `204` on success, all
+   * other sessions revoked (D-ARCH-002). The acting session's raw token is read
+   * from the cookie so the service can preserve exactly that row.
+   */
+  @Post('password')
+  @HttpCode(204)
+  async changePassword(
+    @Body() dto: ChangePasswordDto,
+    @Req() request: RequestWithContext,
+  ): Promise<void> {
+    const userId = request.user?.id;
+    const token = readSessionToken(request);
+    if (userId === undefined || token === undefined) {
+      // Unreachable: the global AuthGuard rejects anonymous calls first.
+      throw new Error('auth/password reached without an acting session');
+    }
+    await this.auth.changePassword(userId, dto, token);
   }
 
   /** The acting user's own profile (FR-ACC-009 read side). */

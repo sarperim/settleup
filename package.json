@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r run typecheck",
     "build": "pnpm -r --sort run build",
     "test": "vitest run",
-    "test:e2e": "node scripts/e2e-db.mjs && pnpm --filter web exec playwright install chromium && pnpm --filter web exec playwright test"
+    "test:system": "vitest run --config vitest.system.config.ts",
+    "test:e2e": "node scripts/e2e-db.mjs && pnpm test:system && pnpm --filter web exec playwright install chromium && pnpm --filter web exec playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
