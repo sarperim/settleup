@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { LoginThrottleService } from './login-throttle.service';
 import { PasswordHasher } from './password-hasher.service';
 import { SessionService } from './session.service';
 import { UsersService } from './users.service';
@@ -21,11 +22,12 @@ import { UsersService } from './users.service';
     AuthService,
     SessionService,
     PasswordHasher,
+    LoginThrottleService,
     UsersService,
     // Layer 1 authorization: protects every route not marked @Public()
     // (arch. §8.1).
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
-  exports: [UsersService, SessionService],
+  exports: [UsersService, SessionService, LoginThrottleService],
 })
 export class AuthModule {}
