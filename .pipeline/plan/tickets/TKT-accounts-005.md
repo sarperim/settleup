@@ -1,7 +1,7 @@
 # TKT-accounts-005: Auth UI — register, login, change password, logout (e2e)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/14 (base: dev)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/14 (base: dev — merged 2026-09-27, review loop clean pass 1; deviations D-1…D-3 adjudicated acceptable, follow-ups K-1…K-3 recorded in round artifact)
 - Size: M
 - Scope: **Create** the auth pages in `apps/web/src/**` (replacing the TKT-foundation-005 placeholders) and e2e specs in `apps/web/test/e2e/**`:
   - `/register`, `/login`, `/change-password` pages wired to the frozen DTO types and the shell's API client: forms with client-side validation (field limits from `packages/shared`), error display from the typed error envelope, post-success navigation per the use cases.
