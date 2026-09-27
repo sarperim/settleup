@@ -1,7 +1,7 @@
 # TKT-accounts-003: Password change & owner reset CLI
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/12 (base: dev)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/12 (base: dev — merged 2026-09-27, review loop clean pass 1; K-2/S-2 race fixed and verified here)
 - Size: M
 - Scope: **Extend** `apps/api/src/auth/**`, **create** `apps/api/src/scripts/set-password.ts` (emitted to `dist/scripts/` by the api build), and add specs:
   - `POST /api/auth/password` — verify current password (`400 INVALID_CURRENT_PASSWORD`), enforce new-password policy with DTO-precedes-service precedence (TC-ACC-035), update the Argon2id hash, delete all of the user's session rows **except the acting one** (D-ARCH-002), `204`.
