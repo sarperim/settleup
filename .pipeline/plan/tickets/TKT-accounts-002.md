@@ -1,6 +1,7 @@
 # TKT-accounts-002: Login, throttle & logout
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/11 (base: dev)
 - Size: M
 - Scope: **Extend** `apps/api/src/auth/**` and add specs under `apps/api/test/integration/**`:
   - `POST /api/auth/login` — submitted email lowercased before lookup, Argon2id verification, session + cookie, `200 { user }`; failure → `401 INVALID_CREDENTIALS` with the generic message, no `Set-Cookie`, and **identical** responses for wrong-password vs nonexistent-email (no enumeration).
@@ -12,3 +13,13 @@
 - Architecture refs: 01-system-architecture.md §8.1 (session lifecycle), §8.2 (login-throttle deterministic semantics), §7 (NFR-ACC-001 row); 03-api-design.md §1 (email normalization), §2 (login/logout rows), §4 (`TOO_MANY_ATTEMPTS` row + throttle note); 02-data-model.md §4 (Session); testing/accounts-access.md §2 (TC-ACC-005…009, 016, 017, 030–033) + conventions (counter reset hook)
 - Dependencies: TKT-accounts-001
 - Parallel group: none
+
+**Implementation record (coder, 2026-09-27):**
+
+- Deliverables: new `apps/api/src/auth/login-throttle.service.ts` (+ `LOGIN_THROTTLE_MAX_FAILURES` / `LOGIN_THROTTLE_WINDOW_MS` in `auth.constants.ts`); `auth.service.ts` login extended with the §8.2 throttle and a `logout(token)` method; `auth.controller.ts` adds `@Req()` IP plumbing to login and `POST /logout` (`204`); `auth.guard.ts` + `session-cookie.ts` share a single `readSessionToken` helper; `auth.module.ts` provides/exports `LoginThrottleService`; harness hook `IntegrationApp.resetLoginThrottle()` in `test/integration/support/app.ts`. Specs: `apps/api/test/integration/tc-acc-{005,006,007,008,009,016,017,030,031,032,033}-*.spec.ts`.
+- Acceptance evidence (local, Node 22 / pnpm 10.34.5; CI runs Node 24): `DATABASE_URL=… pnpm test` → **Test Files 34 passed, Tests 105 passed**, exit 0 (baseline 23/93) · `pnpm lint` exit 0 · `pnpm typecheck` exit 0 · `pnpm build` exit 0. RED proof: pre-wiring, logout specs failed `expected 404 to be 204`, throttle specs `expected 401 to be 429`, F-6 spec failed (verify not called); restored green.
+- Throttle semantics implemented exactly per arch §8.2: in-memory counter keyed by (lowercased submitted email, client IP via `trust proxy`); only credential-verification failures count (CSRF 403 / DTO 400 never count — they short-circuit earlier); fixed 15-minute window anchored at the first counted failure; 11th+ attempt → `429 TOO_MANY_ATTEMPTS` before verification (correct credentials blocked too); cleared on success or window expiry; login only. Check order DTO → throttle → credential verification. Required testability hook: `LoginThrottleService.reset()`, surfaced as `IntegrationApp.resetLoginThrottle()`.
+- **F-6 (accounts-001 review, medium) handled here:** login now performs an Argon2id verification unconditionally — against a boot-computed dummy hash when the email is unknown — so response timing no longer reveals account existence. Body/status parity is unchanged (TC-ACC-007); a deterministic spy asserts the verify path (`tc-acc-007`). Timing itself is non-deterministic and not asserted (strategy T6/G-6). Findings F-1…F-5, F-7…F-13 were deliberately not touched (out of scope).
+- **DEVIATION D-3 (TC-ACC-008 step 3):** the literal `GET /api/groups` returns `404 NOT_FOUND` because C3 Groups has not landed (no route → the global guard never fires); the ticket's dependency set does not include it. "Revoked token grants nothing anywhere" is asserted against the landed protected surface (`GET /api/auth/me`, `POST /api/auth/logout` → both `401 UNAUTHENTICATED`). Routed upstream as **R-3** to the planner/test-planner (TC-ACC-008 step 3 has an unreflected cross-module dependency); the literal grouped-route assertion belongs to the later TC-ACC-015 sweep. No test was weakened.
+- **DEVIATION D-4 (TC-ACC-017):** realized as register → logout (revoking the registration session) → single login → "exactly one row for alice", reconciling the plan's empty-database precondition with the registration factory's own session row.
+- No new dependencies; `apps/web/**`, `packages/shared/src/**`, `apps/api/prisma/**`, root `package.json` / `pnpm-lock.yaml` untouched.
