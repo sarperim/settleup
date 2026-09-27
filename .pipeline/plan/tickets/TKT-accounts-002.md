@@ -1,7 +1,7 @@
 # TKT-accounts-002: Login, throttle & logout
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/11 (base: dev)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/11 (base: dev — merged 2026-09-27, review loop clean pass 1; F-6 timing side channel closed here)
 - Size: M
 - Scope: **Extend** `apps/api/src/auth/**` and add specs under `apps/api/test/integration/**`:
   - `POST /api/auth/login` — submitted email lowercased before lookup, Argon2id verification, session + cookie, `200 { user }`; failure → `401 INVALID_CREDENTIALS` with the generic message, no `Set-Cookie`, and **identical** responses for wrong-password vs nonexistent-email (no enumeration).
