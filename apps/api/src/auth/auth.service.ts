@@ -13,8 +13,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AppError } from '../common/errors/app-error';
 import { DEFAULT_MESSAGES } from '../common/errors/error-contract';
 import { PasswordHasher } from './password-hasher.service';
-import { SessionService } from './session.service';
+import { hashSessionToken, SessionService } from './session.service';
 import { LoginThrottleService } from './login-throttle.service';
+import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
 
@@ -152,6 +153,57 @@ export class AuthService implements OnModuleInit {
   /** Revoke the session addressed by a raw cookie token (FR-ACC-005). */
   async logout(token: string): Promise<void> {
     await this.sessions.revoke(token);
+  }
+
+  /**
+   * Change the acting user's password (FR-ACC-006/007, ASM-003, D-ARCH-002).
+   *
+   * DTO validation has already run in the pipe (a policy-violating `newPassword`
+   * is rejected with `400 VALIDATION_FAILED` before this method — 03 §4 error
+   * precedence), so the only service-level check is the current password: a
+   * mismatch → `400 INVALID_CURRENT_PASSWORD` with nothing changed. On success
+   * the Argon2id hash is replaced and **every other session row for the user is
+   * deleted** in the same transaction, while the acting session survives
+   * (D-ARCH-002 / arch. §8.1). Sessions are addressed by token hash, so the
+   * acting session is identified from its raw cookie token.
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+    actingToken: string,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (user === null) {
+      // A vanished user is unauthenticated (guard resolved the session, so
+      // this is a defensive branch).
+      throw new AppError(
+        401,
+        'UNAUTHENTICATED',
+        DEFAULT_MESSAGES.UNAUTHENTICATED,
+      );
+    }
+
+    const currentMatches = await this.hasher.verify(
+      user.passwordHash,
+      dto.currentPassword,
+    );
+    if (!currentMatches) {
+      throw new AppError(
+        400,
+        'INVALID_CURRENT_PASSWORD',
+        DEFAULT_MESSAGES.INVALID_CURRENT_PASSWORD,
+      );
+    }
+
+    const passwordHash = await this.hasher.hash(dto.newPassword);
+    const actingTokenHash = hashSessionToken(actingToken);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: userId }, data: { passwordHash } });
+      await tx.session.deleteMany({
+        where: { userId, tokenHash: { not: actingTokenHash } },
+      });
+    });
   }
 
   /**

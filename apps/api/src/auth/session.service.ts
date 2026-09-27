@@ -34,6 +34,14 @@ function expiryFrom(now: Date): Date {
   return new Date(now.getTime() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
 }
 
+/** Prisma `P2025`: an operation depended on a record that no longer exists. */
+function isMissingRecord(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2025'
+  );
+}
+
 @Injectable()
 export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
@@ -58,6 +66,14 @@ export class SessionService {
   /**
    * Resolve a raw cookie token to its session, or `null` when absent or
    * expired. A valid session has its sliding expiry pushed to +30 days.
+   *
+   * Concurrency (TKT-accounts-003, review K-2/S-2): between the read and the
+   * sliding-expiry write the row can be deleted by a concurrent revoke — logout,
+   * a password change, or the owner reset CLI. Prisma raises `P2025` when the
+   * `update` targets a row that no longer exists; that is exactly "the session
+   * is gone", so it is mapped to `null` (→ `401 UNAUTHENTICATED`) instead of
+   * surfacing as `500 INTERNAL`. Fails closed either way; this keeps the
+   * observable contract on the revocation race.
    */
   async resolve(token: string): Promise<Session | null> {
     const session = await this.prisma.session.findUnique({
@@ -66,10 +82,17 @@ export class SessionService {
     if (session === null || session.expiresAt.getTime() <= Date.now()) {
       return null;
     }
-    return this.prisma.session.update({
-      where: { id: session.id },
-      data: { expiresAt: expiryFrom(new Date()) },
-    });
+    try {
+      return await this.prisma.session.update({
+        where: { id: session.id },
+        data: { expiresAt: expiryFrom(new Date()) },
+      });
+    } catch (error: unknown) {
+      if (isMissingRecord(error)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /** Revoke the session addressed by a raw cookie token, if it exists. */
