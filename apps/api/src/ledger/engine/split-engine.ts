@@ -20,8 +20,15 @@
  * `groups/random-source.ts`), so unit tests inject a seeded PRNG (strategy
  * §3 T5, the one sanctioned double) while production wires the CSPRNG.
  */
-import type { SplitType } from 'shared';
 import type { RandomSource } from '../../groups/random-source';
+
+/**
+ * Expense split type — exactly two values (BR-EXP-003). Declared locally so
+ * this pure engine has no build-time dependency on the `shared` package's
+ * emitted declarations; it is structurally identical to `shared`'s
+ * `SplitType`, so the ledger service can pass a DTO value straight through.
+ */
+export type SplitType = 'EQUAL' | 'EXACT';
 
 /** One participant's share of an expense, in integer kuruş. */
 export interface SplitShare {
