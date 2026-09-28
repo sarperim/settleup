@@ -1,6 +1,6 @@
 # TKT-groups-006: Join flow UI — join by code, approve/reject, member list & timing (e2e)
 
-- Status: in-review (PR #21)
+- Status: done (merged via PR #21 → dev, 2026-09-28, P-5 parallel group with TKT-groups-005; review loop closed clean at pass 1, zero blocking findings; took PR #17 follow-ups K-2/S-1 + R-1; round artifact `reviews/TKT-groups-006-round-1.md`, open non-blocking follow-ups C-1…C-6 + OBS-1 + test-planner routings recorded there)
 - Size: L
 - Scope: **Create** the join-flow pages in `apps/web/src/**` and the e2e specs:
   - Join-by-code page (`/join/:code`): resolves via `GET /api/join-info` (group name shown before confirming), confirm places the request; re-request after rejection supported.

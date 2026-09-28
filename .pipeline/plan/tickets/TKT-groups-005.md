@@ -1,6 +1,6 @@
 # TKT-groups-005: Groups contract & scale — CSRF, multi-group, full-scale fixture, retention
 
-- Status: in-review (PR #20)
+- Status: done (merged via PR #20 → dev, 2026-09-28, P-5 parallel group with TKT-groups-006; review loop closed clean at pass 1, zero blocking findings, mutation-probe non-vacuity verified; round artifact `reviews/TKT-groups-005-round-1.md`, open non-blocking follow-ups C-1/K-1…K-4 + S-2/R-2 (deadline-bearing joinCode redact, outside this ticket's fence) + planner routings C-2/C-3 recorded there)
 - Size: S
 - Scope: **Create** specs under `apps/api/test/integration/**` — the cross-route and scale assertions that need all groups routes to exist:
   - TC-GRP-022 — CSRF header required on the 4 groups-domain state-changing routes (`POST /api/groups`, `POST /api/join-requests`, approve, reject), no side effects.
