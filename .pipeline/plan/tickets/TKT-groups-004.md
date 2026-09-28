@@ -1,6 +1,6 @@
 # TKT-groups-004: Groups UI — overview, create group, group view, members tab (e2e)
 
-- Status: in-review (PR #17)
+- Status: done (merged via PR #17 → dev, 2026-09-28, P-4 parallel group with TKT-groups-002; review loop closed clean at pass 1, zero blocking findings; round artifact `reviews/TKT-groups-004-round-1.md`, open non-blocking follow-ups K-1/K-2 + nits K-3/K-4 + S-1/S-2 + routings P-1/R-1/R-2 recorded there)
 - Size: M
 - Scope: **Create** the groups pages in `apps/web/src/**` (replacing TKT-foundation-005 placeholders) and the e2e spec:
   - Groups overview (`/`): the caller's groups, create-group entry point.

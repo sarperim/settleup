@@ -1,6 +1,6 @@
 # TKT-groups-002: Join-by-code request flow
 
-- Status: in-review (PR #18)
+- Status: done (merged via PR #18 → dev, 2026-09-28, P-4 parallel group with TKT-groups-004; review loop closed clean at pass 1, zero blocking findings; round artifact `reviews/TKT-groups-002-round-1.md`, open non-blocking follow-ups K-1/K-2 + nits K-3…K-6 + S-1/S-2 + planner routing P-2 recorded there)
 - Size: M
 - Scope: **Extend** `apps/api/src/groups/**` and add specs:
   - `GET /api/join-info?code=...` — resolves a valid code to exactly `{ groupId, groupName }` (nothing else); unknown, wrong-length, or wrong-alphabet codes → `404 CODE_NOT_FOUND`, indistinguishable (FR-GRP-004).
