@@ -1,6 +1,6 @@
 # TKT-exp-001: Split engine — equal split with random-spread remainder, exact split (pure)
 
-- Status: in-review (PR #22 → dev)
+- Status: done (merged via PR #22 → dev, 2026-09-28; review loop closed clean at pass 1, zero blocking findings; round artifact `reviews/TKT-exp-001-round-1.md`, open non-blocking follow-ups C-2/C-3/K-1…K-5 + low S-1 + upstream routings C-1/C-4 recorded there)
 - Evidence: TC-EXP-004/005/006 green. Local CI-parity: `pnpm exec vitest run --project unit` 21 files / 91 tests passed; `pnpm test` (unit + integration + web-unit on real PostgreSQL 17) 76 files / 226 tests passed; `pnpm test:system` (TC-ACC-028 built-CLI) 1/1 passed; `pnpm lint`, `pnpm typecheck`, `pnpm build` all passed. Red-before-green confirmed (missing engine module). No deviation: the engine declares its `SplitType` union locally (structurally identical to `shared`'s) so the pure module needs no build-time dependency on `packages/shared`'s emitted declarations; `apps/api/tsconfig.json` is unchanged.
 - Size: S
 - Scope: **Create** `apps/api/src/ledger/engine/**` (pure functions, no DB, no Nest wiring) and unit specs in `apps/api/test/unit/**`:
