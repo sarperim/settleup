@@ -1,6 +1,6 @@
 # TKT-groups-003: Deciding join requests — approve, reject, re-request
 
-- Status: in-review (PR #19)
+- Status: done (merged via PR #19 → dev, 2026-09-28; review loop closed clean at pass 2 after one fix round — pass-1 blocker K-1 decide() check-then-act race fixed in bfb7f16 and verified; round artifacts `reviews/TKT-groups-003-round-{1,2}.md`, open non-blocking follow-ups K-4 + C-2…C-6 + S-1…S-3 + planner routings C-4/C-5 recorded there)
 - Size: M
 - Scope: **Extend** `apps/api/src/groups/**` and add specs:
   - `GET /api/groups/:groupId/join-requests` — pending requests, **creator only** (member non-creator → `403 NOT_GROUP_CREATOR`; non-member → `404`).
