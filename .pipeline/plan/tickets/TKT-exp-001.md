@@ -1,6 +1,7 @@
 # TKT-exp-001: Split engine — equal split with random-spread remainder, exact split (pure)
 
-- Status: in-progress
+- Status: in-review (PR #22 → dev)
+- Evidence: TC-EXP-004/005/006 green. Local CI-parity: `pnpm exec vitest run --project unit` 21 files / 91 tests passed; `pnpm test` (unit + integration + web-unit on real PostgreSQL 17) 76 files / 226 tests passed; `pnpm lint`, `pnpm typecheck`, `pnpm build` all passed. Red-before-green confirmed (missing engine module). Deviation: added `paths.shared` to `apps/api/tsconfig.json` (type-only, mirrors `apps/web/tsconfig.json`) so the first backend import of the frozen `shared` types resolves under `pnpm typecheck` before `packages/shared/dist` exists.
 - Size: S
 - Scope: **Create** `apps/api/src/ledger/engine/**` (pure functions, no DB, no Nest wiring) and unit specs in `apps/api/test/unit/**`:
   - Equal split per arch §5.1 / ASM-001: `base = floor(amount / n)`; remainder `r = amount − n·base` assigned one kuruş each to `r` **distinct** participants chosen via the **injectable CSPRNG source** (CSPRNG Fisher–Yates shuffle); no participant receives more than one extra kuruş; shares sum exactly to the amount.
