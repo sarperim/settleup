@@ -1,6 +1,6 @@
 # TKT-exp-001: Split engine — equal split with random-spread remainder, exact split (pure)
 
-- Status: todo
+- Status: in-progress
 - Size: S
 - Scope: **Create** `apps/api/src/ledger/engine/**` (pure functions, no DB, no Nest wiring) and unit specs in `apps/api/test/unit/**`:
   - Equal split per arch §5.1 / ASM-001: `base = floor(amount / n)`; remainder `r = amount − n·base` assigned one kuruş each to `r` **distinct** participants chosen via the **injectable CSPRNG source** (CSPRNG Fisher–Yates shuffle); no participant receives more than one extra kuruş; shares sum exactly to the amount.
