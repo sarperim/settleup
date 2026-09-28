@@ -156,5 +156,6 @@ describe('TC-GRP-018 — approve/reject authorization', () => {
       where: { id: fixture.requestId },
     });
     expect(row?.status).toBe('PENDING');
+    await expectNoSideEffects(fixture);
   });
 });

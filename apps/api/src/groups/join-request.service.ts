@@ -15,6 +15,7 @@
  * cleared (BR-GRP-010 re-request semantics).
  */
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService, type UserRef } from '../auth/users.service';
 import { AppError } from '../common/errors/app-error';
@@ -131,10 +132,7 @@ export class JoinRequestService {
 
     const row =
       existing === null
-        ? await this.prisma.joinRequest.create({
-            data: { groupId: group.id, userId: requesterId },
-            select: JOIN_REQUEST_SELECT,
-          })
+        ? await this.createPendingRequest(group.id, requesterId)
         : await this.prisma.joinRequest.update({
             where: { id: existing.id },
             data: { status: 'PENDING', decidedAt: null },
@@ -152,7 +150,8 @@ export class JoinRequestService {
    * The group's **pending** join requests — the creator's handling list
    * (FR-GRP-005, 03 §3). Pending-only by contract; each entry exposes the
    * requester by display name (FR-ACC-008). Caller authorization (creator-only)
-   * is the route guard's job; this is a pure read model.
+   * is the route guard's job; this is a pure read model. Order is unspecified
+   * upstream; join-request insert order is stable and used here.
    */
   async listPending(groupId: string): Promise<JoinRequestView[]> {
     const rows = await this.prisma.joinRequest.findMany({
@@ -222,20 +221,46 @@ export class JoinRequestService {
     }
 
     const row = await this.prisma.$transaction(async (tx) => {
-      if (decision === 'APPROVED') {
-        await tx.membership.create({
-          data: {
-            groupId: request.groupId,
-            userId: request.userId,
-            isCreator: false,
-          },
-        });
-      }
-      return tx.joinRequest.update({
-        where: { id: request.id },
+      // Close the request **conditionally** first: the row lock makes
+      // concurrent decisions serialize, so the loser (double-approve or
+      // approve-vs-reject) updates zero rows and falls into the same `404` as
+      // a decided request (03 §3 — no decided→decided transition exists).
+      const closed = await tx.joinRequest.updateMany({
+        where: { id: request.id, status: 'PENDING' },
         data: { status: decision, decidedAt: new Date() },
+      });
+      if (closed.count === 0) {
+        throw notFound();
+      }
+
+      if (decision === 'APPROVED') {
+        try {
+          await tx.membership.create({
+            data: {
+              groupId: request.groupId,
+              userId: request.userId,
+              isCreator: false,
+            },
+          });
+        } catch (error: unknown) {
+          // Belt-and-braces: a pre-existing membership for the pair can only
+          // mean an equivalent approval won the race — same 404.
+          if (isUniqueConstraintViolation(error)) {
+            throw notFound();
+          }
+          throw error;
+        }
+      }
+
+      const updated = await tx.joinRequest.findUnique({
+        where: { id: request.id },
         select: JOIN_REQUEST_SELECT,
       });
+      if (updated === null) {
+        // Unreachable: the row was just updated in this transaction.
+        throw notFound();
+      }
+      return updated;
     });
 
     const requester = await this.users.getUserRef(request.userId);
@@ -255,11 +280,42 @@ export class JoinRequestService {
       select: { id: true, name: true },
     });
   }
+
+  /**
+   * Create the pending `(groupId, userId)` row. A concurrent place by the same
+   * user wins the unique insert; the loser sees P2002 and maps to the pinned
+   * `409 PENDING_REQUEST_EXISTS` (FR-GRP-012) rather than a 500.
+   */
+  private async createPendingRequest(groupId: string, userId: string) {
+    try {
+      return await this.prisma.joinRequest.create({
+        data: { groupId, userId },
+        select: JOIN_REQUEST_SELECT,
+      });
+    } catch (error: unknown) {
+      if (isUniqueConstraintViolation(error)) {
+        throw new AppError(
+          409,
+          'PENDING_REQUEST_EXISTS',
+          DEFAULT_MESSAGES.PENDING_REQUEST_EXISTS,
+        );
+      }
+      throw error;
+    }
+  }
 }
 
 /** The generic missing/non-member error (existence hiding, 03 §1). */
 function notFound(): AppError {
   return new AppError(404, 'NOT_FOUND', DEFAULT_MESSAGES.NOT_FOUND);
+}
+
+/** True for a unique-index violation (P2002) — cf. `groups.service.ts`. */
+function isUniqueConstraintViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  );
 }
 
 /** Project a persisted join request to its API shape. */
