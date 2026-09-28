@@ -1,6 +1,6 @@
 # TKT-groups-006: Join flow UI — join by code, approve/reject, member list & timing (e2e)
 
-- Status: todo
+- Status: in-review (PR #21)
 - Size: L
 - Scope: **Create** the join-flow pages in `apps/web/src/**` and the e2e specs:
   - Join-by-code page (`/join/:code`): resolves via `GET /api/join-info` (group name shown before confirming), confirm places the request; re-request after rejection supported.

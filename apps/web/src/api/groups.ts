@@ -12,6 +12,10 @@ import type {
   CreateGroupRequestDto,
   GroupResponseDto,
   GroupsResponseDto,
+  JoinByCodeRequestDto,
+  JoinInfoDto,
+  JoinRequestResponseDto,
+  JoinRequestsResponseDto,
   MembersResponseDto,
 } from 'shared';
 
@@ -29,6 +33,31 @@ export interface GroupsApi {
   detail(groupId: string): Promise<GroupResponseDto>;
   /** `GET /api/groups/:groupId/members` — display names only (FR-GRP-010). */
   members(groupId: string): Promise<MembersResponseDto>;
+  /**
+   * `GET /api/join-info?code=...` — resolve a join code to the group's name
+   * before confirming (FR-GRP-004; the code holder learns the name only).
+   */
+  joinInfo(code: string): Promise<JoinInfoDto>;
+  /**
+   * `POST /api/join-requests` — place the join request addressed by `code`
+   * (FR-GRP-003). Re-requesting after a rejection flips the row to `PENDING`.
+   */
+  placeJoinRequest(code: string): Promise<JoinRequestResponseDto>;
+  /**
+   * `GET /api/groups/:groupId/join-requests` — the group's pending requests;
+   * creator only (FR-GRP-005).
+   */
+  pendingRequests(groupId: string): Promise<JoinRequestsResponseDto>;
+  /**
+   * `POST /api/join-requests/:requestId/approve` — establish membership
+   * (FR-GRP-006; creator only).
+   */
+  approveRequest(requestId: string): Promise<JoinRequestResponseDto>;
+  /**
+   * `POST /api/join-requests/:requestId/reject` — close without membership
+   * (FR-GRP-007; creator only).
+   */
+  rejectRequest(requestId: string): Promise<JoinRequestResponseDto>;
 }
 
 export function createGroupsApi(client: ApiClient = api): GroupsApi {
@@ -42,6 +71,24 @@ export function createGroupsApi(client: ApiClient = api): GroupsApi {
       client.get<GroupResponseDto>(`/groups/${encodeURIComponent(groupId)}`),
     members: (groupId: string) =>
       client.get<MembersResponseDto>(`/groups/${encodeURIComponent(groupId)}/members`),
+    joinInfo: (code: string) =>
+      client.get<JoinInfoDto>(`/join-info?code=${encodeURIComponent(code)}`),
+    placeJoinRequest: (code: string) => {
+      const body: JoinByCodeRequestDto = { code };
+      return client.post<JoinRequestResponseDto>('/join-requests', body);
+    },
+    pendingRequests: (groupId: string) =>
+      client.get<JoinRequestsResponseDto>(
+        `/groups/${encodeURIComponent(groupId)}/join-requests`,
+      ),
+    approveRequest: (requestId: string) =>
+      client.post<JoinRequestResponseDto>(
+        `/join-requests/${encodeURIComponent(requestId)}/approve`,
+      ),
+    rejectRequest: (requestId: string) =>
+      client.post<JoinRequestResponseDto>(
+        `/join-requests/${encodeURIComponent(requestId)}/reject`,
+      ),
   };
 }
 
