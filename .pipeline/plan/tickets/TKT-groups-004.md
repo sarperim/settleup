@@ -1,6 +1,6 @@
 # TKT-groups-004: Groups UI — overview, create group, group view, members tab (e2e)
 
-- Status: todo
+- Status: in-review (PR #17)
 - Size: M
 - Scope: **Create** the groups pages in `apps/web/src/**` (replacing TKT-foundation-005 placeholders) and the e2e spec:
   - Groups overview (`/`): the caller's groups, create-group entry point.
