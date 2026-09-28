@@ -1,6 +1,6 @@
 # TKT-groups-002: Join-by-code request flow
 
-- Status: todo
+- Status: in-review (PR #18)
 - Size: M
 - Scope: **Extend** `apps/api/src/groups/**` and add specs:
   - `GET /api/join-info?code=...` — resolves a valid code to exactly `{ groupId, groupName }` (nothing else); unknown, wrong-length, or wrong-alphabet codes → `404 CODE_NOT_FOUND`, indistinguishable (FR-GRP-004).
