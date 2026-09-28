@@ -1,6 +1,6 @@
 # TKT-groups-005: Groups contract & scale — CSRF, multi-group, full-scale fixture, retention
 
-- Status: todo
+- Status: in-review (PR #20)
 - Size: S
 - Scope: **Create** specs under `apps/api/test/integration/**` — the cross-route and scale assertions that need all groups routes to exist:
   - TC-GRP-022 — CSRF header required on the 4 groups-domain state-changing routes (`POST /api/groups`, `POST /api/join-requests`, approve, reject), no side effects.
