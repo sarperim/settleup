@@ -5,6 +5,9 @@
     "moduleResolution": "node",
     "outDir": "./dist",
     "baseUrl": "./",
+    "paths": {
+      "shared": ["../../packages/shared/src/index.ts"]
+    },
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": true
