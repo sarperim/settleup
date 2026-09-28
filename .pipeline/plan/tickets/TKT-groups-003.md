@@ -1,6 +1,6 @@
 # TKT-groups-003: Deciding join requests — approve, reject, re-request
 
-- Status: todo
+- Status: in-review (PR #19)
 - Size: M
 - Scope: **Extend** `apps/api/src/groups/**` and add specs:
   - `GET /api/groups/:groupId/join-requests` — pending requests, **creator only** (member non-creator → `403 NOT_GROUP_CREATOR`; non-member → `404`).
