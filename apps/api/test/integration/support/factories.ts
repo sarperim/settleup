@@ -119,12 +119,75 @@ export async function createGroup(
   return (response.body as { group: CreatedGroup }).group;
 }
 
+/** A join request as returned by the join-flow routes (03 §3). */
+export interface JoinRequestFixture {
+  readonly id: string;
+  readonly groupId: string;
+  readonly requester: UserRefFixture;
+  readonly status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  readonly createdAt: string;
+  readonly decidedAt?: string;
+}
+
+/**
+ * Drive `POST /api/join-requests` and return the created `{ joinRequest }`.
+ * The pending-request-precondition helper shared by the approve/reject TCs;
+ * lands with TKT-groups-003 alongside `joinAndApprove`.
+ */
+export async function placeJoinRequest(
+  server: Server,
+  joinerCookie: string,
+  code: string,
+): Promise<JoinRequestFixture> {
+  const response = await api(server)
+    .post('/api/join-requests')
+    .set(CSRF_HEADERS)
+    .set('Cookie', joinerCookie)
+    .send({ code });
+
+  if (response.status !== 201) {
+    throw new Error(
+      `placeJoinRequest fixture failed: expected 201, got ${response.status} (${JSON.stringify(response.body)})`,
+    );
+  }
+
+  return (response.body as { joinRequest: JoinRequestFixture }).joinRequest;
+}
+
+/**
+ * Strategy §5 factory: place a pending request as `joinerCookie`, then have
+ * `creatorCookie` approve it → an approved member. Lands with TKT-groups-003,
+ * which owns the approve route; returns the decided `{ joinRequest }`.
+ */
+export async function joinAndApprove(
+  server: Server,
+  creatorCookie: string,
+  joinerCookie: string,
+  code: string,
+): Promise<JoinRequestFixture> {
+  const request = await placeJoinRequest(server, joinerCookie, code);
+
+  const response = await api(server)
+    .post(`/api/join-requests/${request.id}/approve`)
+    .set(CSRF_HEADERS)
+    .set('Cookie', creatorCookie);
+
+  if (response.status !== 200) {
+    throw new Error(
+      `joinAndApprove fixture failed: expected 200, got ${response.status} (${JSON.stringify(response.body)})`,
+    );
+  }
+
+  return (response.body as { joinRequest: JoinRequestFixture }).joinRequest;
+}
+
 /**
  * Seed a membership row directly (strategy §5: direct Prisma seeding is
  * permitted for **read-path fixtures** — member-list/overview/group-detail
  * reads over pre-existing facts). The API-driven `joinAndApprove` factory lands
- * with TKT-groups-003, which owns the approve route; this ticket's read-side
- * TCs need approved members before that route exists, so they seed the fact.
+ * with TKT-groups-003, which owns the approve route; TKT-groups-001/002's
+ * read-side TCs need approved members before that route exists, so they seed
+ * the fact.
  */
 export async function seedMembership(
   prisma: PrismaService,

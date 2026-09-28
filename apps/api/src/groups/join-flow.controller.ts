@@ -13,6 +13,7 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   Post,
   Query,
   Req,
@@ -62,5 +63,46 @@ export class JoinFlowController {
   ): Promise<{ joinRequest: JoinRequestView }> {
     const userId = requireUserId(request);
     return { joinRequest: await this.joinRequests.place(userId, dto.code) };
+  }
+
+  /**
+   * Approve a pending join request → membership + closure (FR-GRP-006).
+   * Account-scoped: the handler applies the guard pattern itself (03 §3 note) —
+   * see `JoinRequestService.decide` for the fixed check order.
+   */
+  @Post('join-requests/:requestId/approve')
+  @HttpCode(200)
+  async approve(
+    @Param('requestId') requestId: string,
+    @Req() request: RequestWithContext,
+  ): Promise<{ joinRequest: JoinRequestView }> {
+    const userId = requireUserId(request);
+    return {
+      joinRequest: await this.joinRequests.decide(
+        requestId,
+        userId,
+        'APPROVED',
+      ),
+    };
+  }
+
+  /**
+   * Reject a pending join request → closed, no membership; re-request later
+   * allowed (FR-GRP-007/011).
+   */
+  @Post('join-requests/:requestId/reject')
+  @HttpCode(200)
+  async reject(
+    @Param('requestId') requestId: string,
+    @Req() request: RequestWithContext,
+  ): Promise<{ joinRequest: JoinRequestView }> {
+    const userId = requireUserId(request);
+    return {
+      joinRequest: await this.joinRequests.decide(
+        requestId,
+        userId,
+        'REJECTED',
+      ),
+    };
   }
 }
