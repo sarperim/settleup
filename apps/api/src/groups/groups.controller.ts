@@ -26,7 +26,12 @@ import {
   MembershipService,
   type MemberView,
 } from './membership.service';
+import {
+  JoinRequestService,
+  type JoinRequestView,
+} from './join-request.service';
 import { GroupMemberGuard } from './guards/group-member.guard';
+import { GroupCreatorGuard } from './guards/group-creator.guard';
 
 /** The acting user's id, or `UNAUTHENTICATED` if somehow absent. */
 function requireUserId(request: RequestWithContext): string {
@@ -47,6 +52,7 @@ export class GroupsController {
   constructor(
     private readonly groups: GroupsService,
     private readonly memberships: MembershipService,
+    private readonly joinRequests: JoinRequestService,
   ) {}
 
   /** Create a group; caller becomes creator + first member (FR-GRP-001/002). */
@@ -87,5 +93,18 @@ export class GroupsController {
     @Param('groupId') groupId: string,
   ): Promise<{ members: MemberView[] }> {
     return { members: await this.memberships.listMembers(groupId) };
+  }
+
+  /**
+   * Pending join requests — **creator only** (FR-GRP-005). Layer 2 hides
+   * non-members behind `404`; layer 3 then rejects members who are not the
+   * creator with `403 NOT_GROUP_CREATOR` (03 §3, arch. §8.1 layer 3).
+   */
+  @Get(':groupId/join-requests')
+  @UseGuards(GroupMemberGuard, GroupCreatorGuard)
+  async listJoinRequests(
+    @Param('groupId') groupId: string,
+  ): Promise<{ requests: JoinRequestView[] }> {
+    return { requests: await this.joinRequests.listPending(groupId) };
   }
 }
