@@ -25,6 +25,7 @@
  * fallback covers larger vectors.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AppError } from '../common/errors/app-error';
 import { DEFAULT_MESSAGES } from '../common/errors/error-contract';
 import { PrismaService } from '../prisma/prisma.service';
@@ -109,19 +110,21 @@ export class SettlementsService {
 
   /** The group's live outstanding plan plus its stored settlement facts. */
   async forGroup(groupId: string): Promise<SettlementsView> {
-    const balancesView = await this.balances.forGroup(groupId);
-    const payments = await this.prisma.settledPayment.findMany({
-      where: { groupId },
-      orderBy: [{ paidAt: 'asc' }, { id: 'asc' }],
-      select: {
-        id: true,
-        payerId: true,
-        recipientId: true,
-        amountKurus: true,
-        paidAt: true,
-        undoneAt: true,
-      },
-    });
+    const [balancesView, payments] = await Promise.all([
+      this.balances.forGroup(groupId),
+      this.prisma.settledPayment.findMany({
+        where: { groupId },
+        orderBy: [{ paidAt: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          payerId: true,
+          recipientId: true,
+          amountKurus: true,
+          paidAt: true,
+          undoneAt: true,
+        },
+      }),
+    ]);
 
     const ref = this.refResolver(balancesView);
 
@@ -171,34 +174,55 @@ export class SettlementsService {
       );
     }
 
-    // 2. Recompute balances + plan and insert atomically (03 §3.4).
-    const created = await this.prisma.$transaction(async (tx) => {
-      const balancesView = await this.balances.forGroup(groupId, tx);
-      const match = this.suggestionPlan(balancesView).find(
-        (payment) =>
-          payment.payerId === dto.payerId &&
-          payment.recipientId === dto.recipientId &&
-          payment.amountKurus === dto.amountKurus,
-      );
-      if (match === undefined) {
-        throw new AppError(
-          409,
-          'SUGGESTION_STALE',
-          DEFAULT_MESSAGES.SUGGESTION_STALE,
-        );
-      }
+    // 2. Recompute balances + plan and insert atomically (03 §3.4). The
+    //    transaction runs at Serializable so a concurrent settlement of the
+    //    same live suggestion cannot slip between the plan read and the insert
+    //    (a double-apply); a serialization conflict aborts one transaction,
+    //    which we surface as the same stale-plan `409`.
+    const created = await this.prisma
+      .$transaction(
+        async (tx) => {
+          const balancesView = await this.balances.forGroup(groupId, tx);
+          const match = this.suggestionPlan(balancesView).find(
+            (payment) =>
+              payment.payerId === dto.payerId &&
+              payment.recipientId === dto.recipientId &&
+              payment.amountKurus === dto.amountKurus,
+          );
+          if (match === undefined) {
+            throw new AppError(
+              409,
+              'SUGGESTION_STALE',
+              DEFAULT_MESSAGES.SUGGESTION_STALE,
+            );
+          }
 
-      return tx.settledPayment.create({
-        data: {
-          groupId,
-          payerId: dto.payerId,
-          recipientId: dto.recipientId,
-          amountKurus: dto.amountKurus,
-          status: 'SETTLED',
+          return tx.settledPayment.create({
+            data: {
+              groupId,
+              payerId: dto.payerId,
+              recipientId: dto.recipientId,
+              amountKurus: dto.amountKurus,
+              status: 'SETTLED',
+            },
+            select: SETTLEMENT_ROW_SELECT,
+          });
         },
-        select: SETTLEMENT_ROW_SELECT,
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034'
+        ) {
+          throw new AppError(
+            409,
+            'SUGGESTION_STALE',
+            DEFAULT_MESSAGES.SUGGESTION_STALE,
+          );
+        }
+        throw error;
       });
-    });
 
     const balancesView = await this.balances.forGroup(groupId);
     return this.toSettlementView(created, this.refResolver(balancesView));
@@ -246,9 +270,24 @@ export class SettlementsService {
       );
     }
 
-    const updated = await this.prisma.settledPayment.update({
-      where: { id: settlementId },
+    // Status-guarded transition: only the caller whose update actually flips
+    // `SETTLED → UNDONE` wins. A concurrent undo blocks on the row, re-checks
+    // the guard and matches zero rows → the same `409` (the timestamp is never
+    // overwritten; NFR-BAL-005).
+    const transition = await this.prisma.settledPayment.updateMany({
+      where: { id: settlementId, groupId, status: 'SETTLED' },
       data: { status: 'UNDONE', undoneAt: new Date() },
+    });
+    if (transition.count === 0) {
+      throw new AppError(
+        409,
+        'ALREADY_UNDONE',
+        DEFAULT_MESSAGES.ALREADY_UNDONE,
+      );
+    }
+
+    const updated = await this.prisma.settledPayment.findFirstOrThrow({
+      where: { id: settlementId, groupId },
       select: SETTLEMENT_ROW_SELECT,
     });
 

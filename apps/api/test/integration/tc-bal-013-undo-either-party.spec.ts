@@ -17,7 +17,7 @@ import {
 import {
   createStandingValueGroup,
   markPaid,
-  readBalances,
+  readBalancesView,
   readSettlements,
   undoSettlement,
 } from './support/settlements';
@@ -59,7 +59,12 @@ describe('TC-BAL-013 — undo a settled payment, by either party', () => {
     expect(undone.paidAt).toBe(paidAt);
 
     // 2. Balances revert to the pre-settlement values; sum 0.
-    const balances = await readBalances(ctx.server, alice.cookie, group.id);
+    const { balances, sumKurus } = await readBalancesView(
+      ctx.server,
+      alice.cookie,
+      group.id,
+    );
+    expect(sumKurus).toBe(0);
     expect(balances.get(alice.id)).toBe(6000);
     expect(balances.get(bob.id)).toBe(-3000);
     expect(balances.get(carol.id)).toBe(-3000);
@@ -85,7 +90,7 @@ describe('TC-BAL-013 — undo a settled payment, by either party', () => {
   });
 
   it('by the payer: the same outcome (either party)', async () => {
-    const { alice, bob, group, plan } =
+    const { alice, bob, carol, group, plan } =
       await createStandingValueGroup(ctx.server);
 
     const settlement = await markPaid(ctx.server, bob.cookie, group.id, plan[0]!);
@@ -98,11 +103,33 @@ describe('TC-BAL-013 — undo a settled payment, by either party', () => {
     expect(undone.status).toBe('UNDONE');
     expect(undone.paidAt).toBe(settlement.paidAt);
 
-    const balances = await readBalances(ctx.server, bob.cookie, group.id);
+    // Same outcomes as the recipient case: balances revert, sum 0, plan
+    // re-includes the payment, and the row is retained with `undoneAt`.
+    const { balances, sumKurus } = await readBalancesView(
+      ctx.server,
+      bob.cookie,
+      group.id,
+    );
+    expect(sumKurus).toBe(0);
     expect(balances.get(alice.id)).toBe(6000);
     expect(balances.get(bob.id)).toBe(-3000);
+    expect(balances.get(carol.id)).toBe(-3000);
 
     const view = await readSettlements(ctx.server, bob.cookie, group.id);
     expect(view.outstanding).toHaveLength(2);
+    const tuples = view.outstanding
+      .map((entry) => ({
+        payer: entry.payer.id,
+        recipient: entry.recipient.id,
+        amountKurus: entry.amountKurus,
+      }))
+      .sort((a, b) => a.payer.localeCompare(b.payer));
+    expect(tuples).toEqual([
+      { payer: bob.id, recipient: alice.id, amountKurus: 3000 },
+      { payer: carol.id, recipient: alice.id, amountKurus: 3000 },
+    ]);
+    expect(view.settled).toHaveLength(1);
+    expect(view.settled[0]!.id).toBe(settlement.id);
+    expect(view.settled[0]!.undoneAt).toBe(undone.undoneAt);
   });
 });

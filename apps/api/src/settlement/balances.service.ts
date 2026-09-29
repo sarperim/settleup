@@ -64,10 +64,14 @@ export class BalancesService {
    * `tx` is the optional interactive-transaction client (TKT-bal-004). The
    * mark-paid consistency rule (03-api-design.md §3.4) re-computes the plan
    * **inside the request's DB transaction**: passing `tx` makes the
-   * `settled_payments` read share the connection with the subsequent insert, so
-   * a concurrent settlement cannot slip between the plan check and the write.
-   * The other three inputs (members, expenses, shares) are immutable to the
-   * settlement routes, so their owner-module reads (01 §3 rule 1) stay as-is.
+   * `settled_payments` read share the connection with the subsequent insert,
+   * so the plan is read from, and the fact written to, the same transaction.
+   * Preventing a concurrent settlement from double-applying the same live
+   * suggestion is the caller's responsibility — `markPaid` runs its
+   * transaction at `Serializable`, so a conflicting concurrent transaction
+   * aborts rather than both committing. The other three inputs (members,
+   * expenses, shares) are immutable to the settlement routes, so their
+   * owner-module reads (01 §3 rule 1) stay as-is.
    */
   async forGroup(
     groupId: string,

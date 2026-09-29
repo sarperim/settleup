@@ -169,12 +169,12 @@ export function errorCode(body: unknown): string | undefined {
   return (body as { error?: { code?: string } }).error?.code;
 }
 
-/** The group's per-member balances keyed by member id. */
-export async function readBalances(
+/** The group's balances keyed by member id plus the response's `sumKurus`. */
+export async function readBalancesView(
   server: Server,
   memberCookie: string,
   groupId: string,
-): Promise<Map<string, number>> {
+): Promise<{ balances: Map<string, number>; sumKurus: number }> {
   const response = await api(server)
     .get(`/api/groups/${groupId}/balances`)
     .set('Cookie', memberCookie);
@@ -185,10 +185,23 @@ export async function readBalances(
     );
   }
 
-  const balances = (
-    response.body as {
-      balances: Array<{ member: { id: string }; balanceKurus: number }>;
-    }
-  ).balances;
-  return new Map(balances.map((entry) => [entry.member.id, entry.balanceKurus]));
+  const body = response.body as {
+    balances: Array<{ member: { id: string }; balanceKurus: number }>;
+    sumKurus: number;
+  };
+  return {
+    balances: new Map(
+      body.balances.map((entry) => [entry.member.id, entry.balanceKurus]),
+    ),
+    sumKurus: body.sumKurus,
+  };
+}
+
+/** The group's per-member balances keyed by member id. */
+export async function readBalances(
+  server: Server,
+  memberCookie: string,
+  groupId: string,
+): Promise<Map<string, number>> {
+  return (await readBalancesView(server, memberCookie, groupId)).balances;
 }
