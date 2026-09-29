@@ -1,6 +1,6 @@
 # TKT-bal-003: Settle-up view — outstanding plan + settled facts
 
-- Status: todo
+- Status: in-progress
 - Size: S
 - Scope: **Extend** `apps/api/src/settlement/**` and add integration specs:
   - `GET /api/groups/:groupId/settlements` — `200 { outstanding: [{ payer, recipient, amountKurus }], settled: [{ id, payer, recipient, amountKurus, paidAt, undoneAt? }] }`:
