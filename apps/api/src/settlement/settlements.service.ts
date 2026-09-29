@@ -25,8 +25,12 @@
  * fallback covers larger vectors.
  */
 import { Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { AppError } from '../common/errors/app-error';
+import { DEFAULT_MESSAGES } from '../common/errors/error-contract';
 import { PrismaService } from '../prisma/prisma.service';
-import { BalancesService } from './balances.service';
+import { BalancesService, type BalancesView } from './balances.service';
+import type { CreateSettlementDto } from './dto/create-settlement.dto';
 import {
   SUGGESTION_ENGINE,
   type SuggestionEngine,
@@ -61,6 +65,41 @@ export interface SettlementsView {
   readonly settled: SettledPaymentView[];
 }
 
+/** The stored `PaymentStatus` of a settlement fact (02-data-model.md §4). */
+export type SettlementStatus = 'SETTLED' | 'UNDONE';
+
+/** A settlement fact as returned by the mark-paid/undo write routes (03 §3c). */
+export interface SettlementView {
+  readonly id: string;
+  readonly payer: SettlementPartyView;
+  readonly recipient: SettlementPartyView;
+  readonly amountKurus: number;
+  readonly status: SettlementStatus;
+  readonly paidAt: string;
+  readonly undoneAt?: string;
+}
+
+/** The `settled_payments` columns the write routes read/project. */
+const SETTLEMENT_ROW_SELECT = {
+  id: true,
+  payerId: true,
+  recipientId: true,
+  amountKurus: true,
+  status: true,
+  paidAt: true,
+  undoneAt: true,
+} as const;
+
+interface SettlementRow {
+  readonly id: string;
+  readonly payerId: string;
+  readonly recipientId: string;
+  readonly amountKurus: number;
+  readonly status: SettlementStatus;
+  readonly paidAt: Date;
+  readonly undoneAt: Date | null;
+}
+
 @Injectable()
 export class SettlementsService {
   constructor(
@@ -87,24 +126,9 @@ export class SettlementsService {
       }),
     ]);
 
-    // Member references resolved from the balance view (one entry per member,
-    // display names only). Payers/recipients of stored facts are always
-    // members (memberships are permanent — BR-BAL-008).
-    const refs = new Map(
-      balancesView.balances.map((balance) => [balance.member.id, balance.member]),
-    );
-    const ref = (id: string): SettlementPartyView =>
-      refs.get(id) ?? { id, displayName: '' };
+    const ref = this.refResolver(balancesView);
 
-    // Only nonzero balances enter the engine (BR-BAL-005).
-    const nonzero = new Map<string, number>();
-    for (const balance of balancesView.balances) {
-      if (balance.balanceKurus !== 0) {
-        nonzero.set(balance.member.id, balance.balanceKurus);
-      }
-    }
-
-    const outstanding = this.engine.suggest(nonzero).map((payment) => ({
+    const outstanding = this.suggestionPlan(balancesView).map((payment) => ({
       payer: ref(payment.payerId),
       recipient: ref(payment.recipientId),
       amountKurus: payment.amountKurus,
@@ -122,5 +146,193 @@ export class SettlementsService {
     }));
 
     return { outstanding, settled };
+  }
+
+  /**
+   * Mark a suggested payment as paid (UC-BAL-003 main; FR-BAL-006/007,
+   * BR-BAL-006/007; 03-api-design.md §3c, §3.4).
+   *
+   * Service-level precedence (03 §4, amended 2026-09-25): the **party check
+   * first** — the caller must be the submitted payment's payer or recipient,
+   * else `403 NOT_PAYMENT_PARTY` and no plan work is done. Then balances and
+   * the plan are re-computed **inside the request's DB transaction** and the
+   * submitted `(payerId, recipientId, amountKurus)` must exactly match one
+   * suggestion; otherwise `409 SUGGESTION_STALE` (a stale client plan is
+   * rejected, never double-applied). On a match a `SETTLED` fact is inserted.
+   */
+  async markPaid(
+    actorId: string,
+    groupId: string,
+    dto: CreateSettlementDto,
+  ): Promise<SettlementView> {
+    // 1. Party check — before any plan recomputation (03 §4).
+    if (actorId !== dto.payerId && actorId !== dto.recipientId) {
+      throw new AppError(
+        403,
+        'NOT_PAYMENT_PARTY',
+        DEFAULT_MESSAGES.NOT_PAYMENT_PARTY,
+      );
+    }
+
+    // 2. Recompute balances + plan and insert atomically (03 §3.4). The
+    //    transaction runs at Serializable so a concurrent settlement of the
+    //    same live suggestion cannot slip between the plan read and the insert
+    //    (a double-apply); a serialization conflict aborts one transaction,
+    //    which we surface as the same stale-plan `409`.
+    const created = await this.prisma
+      .$transaction(
+        async (tx) => {
+          const balancesView = await this.balances.forGroup(groupId, tx);
+          const match = this.suggestionPlan(balancesView).find(
+            (payment) =>
+              payment.payerId === dto.payerId &&
+              payment.recipientId === dto.recipientId &&
+              payment.amountKurus === dto.amountKurus,
+          );
+          if (match === undefined) {
+            throw new AppError(
+              409,
+              'SUGGESTION_STALE',
+              DEFAULT_MESSAGES.SUGGESTION_STALE,
+            );
+          }
+
+          return tx.settledPayment.create({
+            data: {
+              groupId,
+              payerId: dto.payerId,
+              recipientId: dto.recipientId,
+              amountKurus: dto.amountKurus,
+              status: 'SETTLED',
+            },
+            select: SETTLEMENT_ROW_SELECT,
+          });
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+      .catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2034'
+        ) {
+          throw new AppError(
+            409,
+            'SUGGESTION_STALE',
+            DEFAULT_MESSAGES.SUGGESTION_STALE,
+          );
+        }
+        throw error;
+      });
+
+    const balancesView = await this.balances.forGroup(groupId);
+    return this.toSettlementView(created, this.refResolver(balancesView));
+  }
+
+  /**
+   * Undo a settled payment (UC-BAL-004 main; FR-BAL-008/009, BR-BAL-006/008;
+   * 03-api-design.md §3c undo row).
+   *
+   * A payment is addressable only through its own group: a foreign or missing
+   * `settlementId` is indistinguishable → `404 NOT_FOUND`. Service-level
+   * precedence (03 §4, amended 2026-09-25): the **party check first** —
+   * caller must be the settled payment's payer or recipient, else
+   * `403 NOT_PAYMENT_PARTY` — then `409 ALREADY_UNDONE` for an already-undone
+   * target. On success `status → UNDONE`, `undoneAt` set, `paidAt` unchanged;
+   * the row is retained forever (NFR-BAL-005) and the excluded payment
+   * naturally re-enters the derived plan on the next read.
+   */
+  async undo(
+    groupId: string,
+    settlementId: string,
+    actorId: string,
+  ): Promise<SettlementView> {
+    const existing = await this.prisma.settledPayment.findFirst({
+      where: { id: settlementId, groupId },
+      select: SETTLEMENT_ROW_SELECT,
+    });
+    if (existing === null) {
+      throw new AppError(404, 'NOT_FOUND', DEFAULT_MESSAGES.NOT_FOUND);
+    }
+
+    // Party check precedes the state check (03 §4).
+    if (actorId !== existing.payerId && actorId !== existing.recipientId) {
+      throw new AppError(
+        403,
+        'NOT_PAYMENT_PARTY',
+        DEFAULT_MESSAGES.NOT_PAYMENT_PARTY,
+      );
+    }
+    if (existing.status === 'UNDONE') {
+      throw new AppError(
+        409,
+        'ALREADY_UNDONE',
+        DEFAULT_MESSAGES.ALREADY_UNDONE,
+      );
+    }
+
+    // Status-guarded transition: only the caller whose update actually flips
+    // `SETTLED → UNDONE` wins. A concurrent undo blocks on the row, re-checks
+    // the guard and matches zero rows → the same `409` (the timestamp is never
+    // overwritten; NFR-BAL-005).
+    const transition = await this.prisma.settledPayment.updateMany({
+      where: { id: settlementId, groupId, status: 'SETTLED' },
+      data: { status: 'UNDONE', undoneAt: new Date() },
+    });
+    if (transition.count === 0) {
+      throw new AppError(
+        409,
+        'ALREADY_UNDONE',
+        DEFAULT_MESSAGES.ALREADY_UNDONE,
+      );
+    }
+
+    const updated = await this.prisma.settledPayment.findFirstOrThrow({
+      where: { id: settlementId, groupId },
+      select: SETTLEMENT_ROW_SELECT,
+    });
+
+    const balancesView = await this.balances.forGroup(groupId);
+    return this.toSettlementView(updated, this.refResolver(balancesView));
+  }
+
+  /** Only members with a nonzero balance enter the engine (BR-BAL-005). */
+  private suggestionPlan(
+    balancesView: BalancesView,
+  ): Array<{ payerId: string; recipientId: string; amountKurus: number }> {
+    const nonzero = new Map<string, number>();
+    for (const balance of balancesView.balances) {
+      if (balance.balanceKurus !== 0) {
+        nonzero.set(balance.member.id, balance.balanceKurus);
+      }
+    }
+    return this.engine.suggest(nonzero);
+  }
+
+  /** Resolve a member id to its `{ id, displayName }` ref (FR-ACC-008). */
+  private refResolver(
+    balancesView: BalancesView,
+  ): (id: string) => SettlementPartyView {
+    const refs = new Map(
+      balancesView.balances.map((balance) => [balance.member.id, balance.member]),
+    );
+    return (id: string) => refs.get(id) ?? { id, displayName: '' };
+  }
+
+  /** Project one stored settlement fact to its write-response shape. */
+  private toSettlementView(
+    row: SettlementRow,
+    ref: (id: string) => SettlementPartyView,
+  ): SettlementView {
+    return {
+      id: row.id,
+      payer: ref(row.payerId),
+      recipient: ref(row.recipientId),
+      amountKurus: row.amountKurus,
+      status: row.status,
+      paidAt: row.paidAt.toISOString(),
+      ...(row.undoneAt !== null
+        ? { undoneAt: row.undoneAt.toISOString() }
+        : {}),
+    };
   }
 }
