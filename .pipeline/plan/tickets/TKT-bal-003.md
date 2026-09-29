@@ -1,6 +1,6 @@
 # TKT-bal-003: Settle-up view — outstanding plan + settled facts
 
-- Status: in-review
+- Status: done
 - PR: https://github.com/sarperim/settleup/pull/30
 - Size: S
 - Scope: **Extend** `apps/api/src/settlement/**` and add integration specs:
