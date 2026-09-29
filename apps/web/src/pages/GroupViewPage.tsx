@@ -11,9 +11,15 @@
  * entry point to the add-expense form. TKT-exp-006 adds the logger-only
  * edit/delete affordances on each entry (BR-EXP-007's UI aspect): only the
  * logged-in expense's `logger` sees Edit (→ the edit form) and Delete
- * (`DELETE …/expenses/:expenseId`); the API enforces the same rule. The
- * Balances / Settle-up tabs stay
- * labelled placeholders until their domain UI tickets land. The group's name
+ * (`DELETE …/expenses/:expenseId`); the API enforces the same rule.
+ * The **Balances** tab (TKT-bal-006) shows every member's derived running
+ * balance by display name with a visible zero-sum total (UC-BAL-001,
+ * FR-BAL-001/002/003, OBJ-004). The **Settle-up** tab (TKT-bal-006) shows the
+ * live outstanding suggestion plan and the settled-payment facts, distinguished
+ * (UC-BAL-002, FR-BAL-004/005/010): a suggestion offers **Mark paid** only to
+ * the acting user when they are its payer or recipient (BR-BAL-006); a settled
+ * entry offers **Undo** to its parties and an undone entry is labelled
+ * (UC-BAL-003/004, FR-BAL-006…009). The group's name
  * and — for the creator only — its join code come from
  * `GET /api/groups/:groupId` (FR-GRP-002).
  *
@@ -30,21 +36,63 @@
  * tab.
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { ExpenseDto, GroupDto, JoinRequestDto, MemberDto } from 'shared';
+import type {
+  BalancesResponseDto,
+  ExpenseDto,
+  GroupDto,
+  JoinRequestDto,
+  MemberDto,
+  OutstandingSuggestionDto,
+  SettlementDto,
+  SettleUpViewDto,
+} from 'shared';
 
 import { expensesApi } from '../api/expenses';
 import { groupsApi } from '../api/groups';
+import { settlementsApi } from '../api/settlements';
 import { ApiError } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
 import { formatKurus, type Kurus } from '../money';
 import { GROUP_TABS, GROUP_TAB_LABELS, SPA_ROUTES, type GroupTab } from '../routes';
 
-const TAB_PLACEHOLDERS: Record<Exclude<GroupTab, 'members' | 'expenses'>, string> = {
-  balances: 'Per-member balances placeholder.',
-  'settle-up': 'Settle-up suggestions placeholder.',
-};
+/**
+ * Render a signed kuruş amount for display. Balances are plain signed numbers
+ * (positive = the group owes the member — settlements DTO); `formatKurus`
+ * accepts only non-negative `Kurus`, so the sign is applied here. Zero renders
+ * without a sign.
+ */
+function formatSignedKurus(kurus: number): string {
+  const sign = kurus > 0 ? '+' : kurus < 0 ? '-' : '';
+  return `${sign}${formatKurus(Math.abs(kurus) as Kurus)}`;
+}
+
+/**
+ * A settlement's status. The write routes (mark-paid/undo) carry `status`
+ * explicitly; the `GET …/settlements` view omits it and distinguishes an undone
+ * fact by the presence of `undoneAt` (03-api-design.md §3c; NFR-BAL-005) — so
+ * fall back to that signal when `status` is absent.
+ */
+function settlementStatus(settlement: SettlementDto): 'SETTLED' | 'UNDONE' {
+  if (settlement.status === 'SETTLED' || settlement.status === 'UNDONE') {
+    return settlement.status;
+  }
+  return settlement.undoneAt === undefined ? 'SETTLED' : 'UNDONE';
+}
+
+/** A suggestion/settlement payment line: "Payer pays Recipient ₺123.45". */
+function paymentLabel(payerName: string, recipientName: string, amountKurus: number): string {
+  return `${payerName} pays ${recipientName} ₺${formatKurus(Math.abs(amountKurus) as Kurus)}`;
+}
+
+/** Whether the acting user is the payer or recipient of `suggestion` (BR-BAL-006). */
+function isSuggestionParty(
+  suggestion: { payer: { id: string }; recipient: { id: string } },
+  userId: string | undefined,
+): boolean {
+  return userId !== undefined && (suggestion.payer.id === userId || suggestion.recipient.id === userId);
+}
 
 export function GroupViewPage() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -64,10 +112,64 @@ export function GroupViewPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Balances & settle-up (TKT-bal-006): derived data fetched lazily per tab.
+  const [balances, setBalances] = useState<BalancesResponseDto | null>(null);
+  const [settleUp, setSettleUp] = useState<SettleUpViewDto | null>(null);
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  const [settleUpLoading, setSettleUpLoading] = useState(false);
+  const [financialError, setFinancialError] = useState<string | null>(null);
+  const [mutatingKey, setMutatingKey] = useState<string | null>(null);
+
   // The server returns `joinCode` iff the caller is the creator (FR-GRP-002);
   // the caller's own id compared with `group.creator.id` is the same signal
   // from the detail payload and gates the creator-only handling section.
   const isCreator = group !== null && user !== null && group.creator.id === user.id;
+
+  /** Load the derived balances (UC-BAL-001; FR-BAL-001/002/003). */
+  const loadBalances = useCallback(async () => {
+    if (groupId === undefined) {
+      return;
+    }
+    setBalancesLoading(true);
+    setFinancialError(null);
+    try {
+      setBalances(await settlementsApi.balances(groupId));
+    } catch (caught) {
+      setFinancialError(caught instanceof ApiError ? caught.message : 'Could not load balances.');
+    } finally {
+      setBalancesLoading(false);
+    }
+  }, [groupId]);
+
+  /**
+   * Load the settle-up view — outstanding suggestions and settled facts
+   * (UC-BAL-002; FR-BAL-004/005/010).
+   */
+  const loadSettleUp = useCallback(async () => {
+    if (groupId === undefined) {
+      return;
+    }
+    setSettleUpLoading(true);
+    setFinancialError(null);
+    try {
+      setSettleUp(await settlementsApi.view(groupId));
+    } catch (caught) {
+      setFinancialError(
+        caught instanceof ApiError ? caught.message : 'Could not load settle-up.',
+      );
+    } finally {
+      setSettleUpLoading(false);
+    }
+  }, [groupId]);
+
+  // Fetch the tab's derived data when it becomes active (lazy per-tab load).
+  useEffect(() => {
+    if (activeTab === 'balances') {
+      void loadBalances();
+    } else if (activeTab === 'settle-up') {
+      void loadSettleUp();
+    }
+  }, [activeTab, loadBalances, loadSettleUp]);
 
   useEffect(() => {
     // Reset per-group state: a param-only transition must not display the
@@ -82,6 +184,10 @@ export function GroupViewPage() {
     setRequestsError(null);
     setDeletingId(null);
     setDeleteError(null);
+    setBalances(null);
+    setSettleUp(null);
+    setFinancialError(null);
+    setMutatingKey(null);
 
     if (groupId === undefined) {
       setError('Missing group id.');
@@ -198,6 +304,58 @@ export function GroupViewPage() {
     }
   }
 
+  /**
+   * Mark an outstanding suggestion paid (UC-BAL-003; FR-BAL-006/007). Only a
+   * party sees the affordance; the API re-validates the party rule and the
+   * exact plan match (§3.4). Balances and the settle-up view are refetched so
+   * both tabs show the new state.
+   */
+  async function markPaid(suggestion: OutstandingSuggestionDto) {
+    if (groupId === undefined) {
+      return;
+    }
+    const key = `${suggestion.payer.id}:${suggestion.recipient.id}:${String(suggestion.amountKurus)}`;
+    setMutatingKey(key);
+    setFinancialError(null);
+    try {
+      await settlementsApi.markPaid(groupId, {
+        payerId: suggestion.payer.id,
+        recipientId: suggestion.recipient.id,
+        amountKurus: suggestion.amountKurus,
+      });
+      await Promise.all([loadSettleUp(), loadBalances()]);
+    } catch (caught) {
+      setFinancialError(
+        caught instanceof ApiError ? caught.message : 'Could not mark the payment paid.',
+      );
+    } finally {
+      setMutatingKey(null);
+    }
+  }
+
+  /**
+   * Undo a settled payment (UC-BAL-004; FR-BAL-008/009). The row is retained
+   * and marked undone (NFR-BAL-005); balances and the settle-up view are
+   * refetched so the equivalent suggestion returns to outstanding.
+   */
+  async function undoSettlement(settlementId: string) {
+    if (groupId === undefined) {
+      return;
+    }
+    setMutatingKey(settlementId);
+    setFinancialError(null);
+    try {
+      await settlementsApi.undo(groupId, settlementId);
+      await Promise.all([loadSettleUp(), loadBalances()]);
+    } catch (caught) {
+      setFinancialError(
+        caught instanceof ApiError ? caught.message : 'Could not undo the payment.',
+      );
+    } finally {
+      setMutatingKey(null);
+    }
+  }
+
   return (
     <section>
       <h1>{group?.name ?? 'Group'}</h1>
@@ -298,8 +456,107 @@ export function GroupViewPage() {
             )
           ) : null}
         </>
+      ) : activeTab === 'balances' ? (
+        <>
+          {financialError !== null && <p role="alert">{financialError}</p>}
+          {balancesLoading && balances === null ? (
+            <p>Loading balances…</p>
+          ) : balances === null ? null : (
+            <>
+              <ul data-testid="balance-list">
+                {balances.balances.map((entry) => (
+                  <li key={entry.member.id} data-testid="balance-item">
+                    <span data-testid="balance-member">{entry.member.displayName}</span>
+                    <span data-testid="balance-amount">{formatSignedKurus(entry.balanceKurus)}</span>
+                  </li>
+                ))}
+              </ul>
+              <p data-testid="balance-sum">Total: {formatSignedKurus(balances.sumKurus)}</p>
+            </>
+          )}
+        </>
       ) : (
-        <p>{TAB_PLACEHOLDERS[activeTab]}</p>
+        <>
+          {financialError !== null && <p role="alert">{financialError}</p>}
+          {settleUpLoading && settleUp === null ? (
+            <p>Loading settle-up…</p>
+          ) : settleUp === null ? null : (
+            <>
+              <h3>Outstanding</h3>
+              {settleUp.outstanding.length === 0 ? (
+                <p data-testid="outstanding-empty">Nothing outstanding.</p>
+              ) : (
+                <ul data-testid="outstanding-list">
+                  {settleUp.outstanding.map((suggestion) => {
+                    const key = `${suggestion.payer.id}:${suggestion.recipient.id}:${String(suggestion.amountKurus)}`;
+                    return (
+                      <li key={key} data-testid="outstanding-item">
+                        <span data-testid="outstanding-text">
+                          {paymentLabel(
+                            suggestion.payer.displayName,
+                            suggestion.recipient.displayName,
+                            suggestion.amountKurus,
+                          )}
+                        </span>
+                        {isSuggestionParty(suggestion, user?.id) && (
+                          <button
+                            type="button"
+                            data-testid="mark-paid"
+                            disabled={mutatingKey === key}
+                            onClick={() => {
+                              void markPaid(suggestion);
+                            }}
+                          >
+                            Mark paid
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              <h3>Settled</h3>
+              {settleUp.settled.length === 0 ? (
+                <p data-testid="settled-empty">No settled payments yet.</p>
+              ) : (
+                <ul data-testid="settled-list">
+                  {settleUp.settled.map((settlement) => (
+                    <li
+                      key={settlement.id}
+                      data-testid="settled-item"
+                      data-status={settlementStatus(settlement)}
+                    >
+                      <span data-testid="settled-text">
+                        {paymentLabel(
+                          settlement.payer.displayName,
+                          settlement.recipient.displayName,
+                          settlement.amountKurus,
+                        )}
+                      </span>
+                      {settlementStatus(settlement) === 'UNDONE' && (
+                        <span data-testid="settled-undone">Undone</span>
+                      )}
+                      {settlementStatus(settlement) === 'SETTLED' &&
+                        isSuggestionParty(settlement, user?.id) && (
+                          <button
+                            type="button"
+                            data-testid="undo-settlement"
+                            disabled={mutatingKey === settlement.id}
+                            onClick={() => {
+                              void undoSettlement(settlement.id);
+                            }}
+                          >
+                            Undo
+                          </button>
+                        )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {isCreator && (
