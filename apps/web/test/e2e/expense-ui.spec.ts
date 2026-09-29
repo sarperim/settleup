@@ -1,6 +1,7 @@
-import { expect, test, type Browser, type Page, type Request } from '@playwright/test';
+import { expect, test, type Request } from '@playwright/test';
 
-import { e2eIdentity, register, type Credentials } from './helpers/auth';
+import { e2eIdentity } from './helpers/auth';
+import { addApprovedMember, createGroupViaUi } from './helpers/group-setup';
 
 /**
  * Expense UI e2e — TC-EXP-028 and TC-EXP-031 (testing/expense-tracking.md §2).
@@ -22,57 +23,6 @@ const SUBMIT_VISIBLE_BUDGET_MS = 500 * 3;
 function median(samples: number[]): number {
   const sorted = [...samples].sort((a, b) => a - b);
   return sorted[Math.floor(sorted.length / 2)]!;
-}
-
-interface GroupSetup {
-  groupUrl: string;
-  code: string;
-}
-
-/** Register `creator`, create a group through the UI, return its URL and code. */
-async function createGroupViaUi(
-  page: Page,
-  creator: Credentials,
-  name: string,
-): Promise<GroupSetup> {
-  await register(page, creator);
-  await page.getByRole('button', { name: 'Create group', exact: true }).click();
-  await page.getByLabel('Group name').fill(name);
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
-  await expect(page).toHaveURL(/\/groups\/[^/]+$/);
-  const groupUrl = page.url();
-  const code = ((await page.getByTestId('join-code').textContent()) ?? '').trim();
-  expect(code).toMatch(/^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{8}$/);
-  return { groupUrl, code };
-}
-
-/**
- * Register `member` in a fresh browser context, place a join request and have
- * the creator approve it from their handling view. The member's context is
- * closed; the creator page is left on the group view.
- */
-async function addApprovedMember(
-  browser: Browser,
-  creatorPage: Page,
-  groupUrl: string,
-  code: string,
-  member: Credentials,
-): Promise<void> {
-  const memberContext = await browser.newContext();
-  const memberPage = await memberContext.newPage();
-  await register(memberPage, member);
-  await memberPage.goto(`/join/${code}`);
-  await expect(memberPage.getByTestId('join-group-name')).toHaveText('Trip');
-  await memberPage.getByRole('button', { name: 'Request to join' }).click();
-  await expect(memberPage.getByTestId('join-request-pending')).toBeVisible();
-
-  await creatorPage.goto(groupUrl);
-  const request = creatorPage.getByTestId('join-request-item');
-  await expect(request).toHaveCount(1);
-  await request.getByRole('button', { name: 'Approve' }).click();
-  await expect(creatorPage.getByTestId('join-request-item')).toHaveCount(0);
-
-  await memberContext.close();
 }
 
 test('TC-EXP-028 — add-expense journey through the UI within 30 seconds', async ({
