@@ -1,6 +1,6 @@
 # TKT-bal-004: Settlement lifecycle — mark paid & undo (party-only)
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Extend** `apps/api/src/settlement/**` and add integration specs:
   - `POST /api/groups/:groupId/settlements { payerId, recipientId, amountKurus }` — **party check first**: caller must be the payment's payer or recipient, else `403 NOT_PAYMENT_PARTY` (an unauthorized caller triggers no plan work — amended precedence); then the mark-paid consistency rule (API §3.4): re-compute balances and the plan **inside the request's DB transaction** and require an exact triple match with a current suggestion, else `409 SUGGESTION_STALE`; on match insert a `SETTLED` row (FR-BAL-006/007).
