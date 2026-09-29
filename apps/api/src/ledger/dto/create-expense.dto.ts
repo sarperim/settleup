@@ -14,6 +14,7 @@
  * without teaching the DTO here is a compile-time error at this seam.
  */
 import {
+  ArrayUnique,
   IsArray,
   IsIn,
   IsInt,
@@ -25,6 +26,10 @@ import {
   MaxLength,
   Min,
   MinLength,
+  Validate,
+  ValidatorConstraint,
+  type ValidationArguments,
+  type ValidatorConstraintInterface,
 } from 'class-validator';
 import type { SplitType } from '../engine/split-engine';
 
@@ -38,6 +43,61 @@ const SPLIT_TYPE_VALUES: Record<SplitType, true> = { EQUAL: true, EXACT: true };
 export const SPLIT_TYPES: SplitType[] = Object.keys(
   SPLIT_TYPE_VALUES,
 ) as SplitType[];
+
+/**
+ * EXACT-split input fence (S-1a/S-1b/K-1/K-3). Every `exactAmounts` value must
+ * be an integer kuruş in `[0, amountKurus]` and every key must name a
+ * participant. Without it, values that happen to sum to the amount but include
+ * a negative or oversized share pass the pure engine and are **persisted** as
+ * `shareKurus < 0` — violating the frozen `expense_shares.shareKurus ≥ 0`
+ * constraint (02-data-model.md §5.4) and the Σ-share invariant enforced by
+ * `LedgerService` (§9) — while fractional values are silently truncated on the
+ * `Int` write. Unknown keys are rejected so the accepted shape is
+ * deterministic (review C-4); missing participant keys remain valid, the engine
+ * treats them as `0` (BR-EXP-006). A format/value failure here yields the
+ * standard `400 VALIDATION_FAILED` with `details.fields`, never a `500`.
+ */
+const EXACT_AMOUNTS_MESSAGE =
+  'exactAmounts values must be integer kuruş in [0, amountKurus], keyed by a participant id.';
+
+@ValidatorConstraint({ name: 'exactAmountsRange', async: false })
+class ExactAmountsRangeConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown, args: ValidationArguments): boolean {
+    const dto = args.object as CreateExpenseDto;
+    // `exactAmounts` is only consumed by EXACT splits (BR-EXP-006).
+    if (dto.splitType !== 'EXACT') {
+      return true;
+    }
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return false;
+    }
+    // A bad `amountKurus` reports its own failure; avoid masking it here.
+    if (typeof dto.amountKurus !== 'number') {
+      return true;
+    }
+    const participantIds = new Set(dto.participantIds ?? []);
+    for (const [participantId, share] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      if (!participantIds.has(participantId)) {
+        return false;
+      }
+      if (
+        typeof share !== 'number' ||
+        !Number.isInteger(share) ||
+        share < 0 ||
+        share > dto.amountKurus
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  defaultMessage(): string {
+    return EXACT_AMOUNTS_MESSAGE;
+  }
+}
 
 export class CreateExpenseDto {
   @IsString()
@@ -60,6 +120,7 @@ export class CreateExpenseDto {
    */
   @IsArray()
   @IsString({ each: true })
+  @ArrayUnique()
   participantIds!: string[];
 
   @IsIn(SPLIT_TYPES)
@@ -68,5 +129,6 @@ export class CreateExpenseDto {
   /** Per-participant kuruş for EXACT splits (BR-EXP-006). */
   @IsOptional()
   @IsObject()
+  @Validate(ExactAmountsRangeConstraint)
   exactAmounts?: Record<string, number>;
 }
