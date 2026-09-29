@@ -1,6 +1,7 @@
 # TKT-bal-001: Suggestion engine — minimum-transaction settlement plans (pure)
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/28
 - Size: M
 - Scope: **Create** `apps/api/src/settlement/engine/**` (pure functions, no DB, no Nest wiring) and unit specs in `apps/api/test/unit/**`:
   - Exact minimum-transaction search per arch §5.3: depth-first — settle the first debtor against each creditor in turn (`min(|debtor|, creditor|)`), recurse on the reduced balance vector, memoize on the canonical state, keep the first minimum-length solution.
