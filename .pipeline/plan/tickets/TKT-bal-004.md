@@ -1,6 +1,6 @@
 # TKT-bal-004: Settlement lifecycle — mark paid & undo (party-only)
 
-- Status: in-review
+- Status: done
 - PR: https://github.com/sarperim/settleup/pull/31
 - Size: M
 - Scope: **Extend** `apps/api/src/settlement/**` and add integration specs:
