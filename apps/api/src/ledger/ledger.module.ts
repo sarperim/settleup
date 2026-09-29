@@ -12,6 +12,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { GroupsModule } from '../groups/groups.module';
 import { CryptoRandomSource, RANDOM_SOURCE } from '../groups/random-source';
+import { ExpenseLoggerGuard } from './guards/expense-logger.guard';
 import { LedgerController } from './ledger.controller';
 import { LedgerReadService } from './ledger-read.service';
 import { LedgerService } from './ledger.service';
@@ -22,6 +23,7 @@ import { LedgerService } from './ledger.service';
   providers: [
     LedgerService,
     LedgerReadService,
+    ExpenseLoggerGuard,
     { provide: RANDOM_SOURCE, useClass: CryptoRandomSource },
   ],
   exports: [LedgerReadService],
