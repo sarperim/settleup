@@ -1,6 +1,7 @@
 /**
- * Ledger controller — C4 expense routes (TKT-exp-002;
- * 03-api-design.md §3b create row, 01-system-architecture.md §8.1).
+ * Ledger controller — C4 expense routes (TKT-exp-002 create + minimal detail;
+ * TKT-exp-003 full list/detail; 03-api-design.md §3b rows,
+ * 01-system-architecture.md §8.1).
  *
  * Every route is group-scoped and applies `GroupMemberGuard` (layer 2): a
  * non-member receives `404 NOT_FOUND`, indistinguishable from a missing group
@@ -54,6 +55,18 @@ export class LedgerController {
   ): Promise<{ expense: ExpenseView }> {
     const loggerId = requireUserId(request);
     return { expense: await this.ledger.create(loggerId, groupId, dto) };
+  }
+
+  /**
+   * Group ledger, newest first (UC-EXP-004 main; FR-EXP-011, NFR-EXP-004).
+   * The full list is returned with no pagination; the defensive 500-row cap
+   * surfaces as `500 LIST_TOO_LARGE` (03 §3b).
+   */
+  @Get()
+  async list(
+    @Param('groupId') groupId: string,
+  ): Promise<{ expenses: ExpenseView[] }> {
+    return { expenses: await this.ledger.list(groupId) };
   }
 
   /** Expense detail incl. shares and timestamps (FR-EXP-011 read aspect). */
