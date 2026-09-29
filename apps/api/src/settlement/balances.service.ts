@@ -29,6 +29,7 @@
  * per-member delta map.
  */
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MembershipService } from '../groups/membership.service';
 import { LedgerReadService } from '../ledger/ledger-read.service';
@@ -59,13 +60,25 @@ export class BalancesService {
   /**
    * The group's per-member balances and their sum. Only the group's stored
    * expenses, shares and settled payments are folded in — no cross-group data.
+   *
+   * `tx` is the optional interactive-transaction client (TKT-bal-004). The
+   * mark-paid consistency rule (03-api-design.md §3.4) re-computes the plan
+   * **inside the request's DB transaction**: passing `tx` makes the
+   * `settled_payments` read share the connection with the subsequent insert, so
+   * a concurrent settlement cannot slip between the plan check and the write.
+   * The other three inputs (members, expenses, shares) are immutable to the
+   * settlement routes, so their owner-module reads (01 §3 rule 1) stay as-is.
    */
-  async forGroup(groupId: string): Promise<BalancesView> {
+  async forGroup(
+    groupId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<BalancesView> {
+    const client = tx ?? this.prisma;
     const [members, expenses, shares, payments] = await Promise.all([
       this.memberships.listMembers(groupId),
       this.read.listGroupExpenses(groupId),
       this.read.listGroupShares(groupId),
-      this.prisma.settledPayment.findMany({
+      client.settledPayment.findMany({
         where: { groupId, status: SETTLED },
         select: { payerId: true, recipientId: true, amountKurus: true },
       }),
