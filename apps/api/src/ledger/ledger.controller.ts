@@ -11,9 +11,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -24,6 +26,9 @@ import { DEFAULT_MESSAGES } from '../common/errors/error-contract';
 import type { GroupScopedRequest } from '../groups/group-request-context';
 import { GroupMemberGuard } from '../groups/guards/group-member.guard';
 import { CreateExpenseDto } from './dto/create-expense.dto';
+import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { ExpenseLoggerGuard } from './guards/expense-logger.guard';
+import type { ExpenseScopedRequest } from './ledger-request-context';
 import { LedgerService, type ExpenseView } from './ledger.service';
 
 /** The acting user's id, or `UNAUTHENTICATED` if somehow absent. */
@@ -77,4 +82,49 @@ export class LedgerController {
   ): Promise<{ expense: ExpenseView }> {
     return { expense: await this.ledger.getDetail(groupId, expenseId) };
   }
+
+  /**
+   * Edit an expense — logger only (UC-EXP-002 main; FR-EXP-006/008/010,
+   * BR-EXP-005/007; 03 §3b PATCH row). `ExpenseLoggerGuard` runs before the
+   * validation pipe: a non-logger gets `403 NOT_LOGGER` even with an invalid
+   * body, and a foreign/missing id gets `404 NOT_FOUND`.
+   */
+  @Patch(':expenseId')
+  @UseGuards(ExpenseLoggerGuard)
+  async update(
+    @Param('groupId') groupId: string,
+    @Body() dto: UpdateExpenseDto,
+    @Req() request: ExpenseScopedRequest,
+  ): Promise<{ expense: ExpenseView }> {
+    return {
+      expense: await this.ledger.update(
+        groupId,
+        requireExpense(request),
+        dto,
+      ),
+    };
+  }
+
+  /**
+   * Delete an expense — logger only (UC-EXP-003 main; FR-EXP-009/012,
+   * BR-EXP-011; 03 §3b DELETE row). Permanent removal incl. shares.
+   */
+  @Delete(':expenseId')
+  @HttpCode(204)
+  @UseGuards(ExpenseLoggerGuard)
+  async remove(@Req() request: ExpenseScopedRequest): Promise<void> {
+    await this.ledger.delete(requireExpense(request));
+  }
+}
+
+/**
+ * The expense `ExpenseLoggerGuard` resolved and attached. Unreachable when the
+ * guard ran (it rejects first); fail closed with the same `404` if it did not.
+ */
+function requireExpense(request: ExpenseScopedRequest) {
+  const expense = request.expense;
+  if (expense === undefined) {
+    throw new AppError(404, 'NOT_FOUND', DEFAULT_MESSAGES.NOT_FOUND);
+  }
+  return expense;
 }

@@ -23,7 +23,11 @@ import { AppError } from '../common/errors/app-error';
 import { DEFAULT_MESSAGES } from '../common/errors/error-contract';
 import { MembershipService } from '../groups/membership.service';
 import { RANDOM_SOURCE, type RandomSource } from '../groups/random-source';
-import { splitExpense, type SplitType } from './engine/split-engine';
+import {
+  splitExpense,
+  type SplitShare,
+  type SplitType,
+} from './engine/split-engine';
 import {
   EXPENSE_ROW_SELECT,
   LedgerReadService,
@@ -31,6 +35,7 @@ import {
   type LedgerShareRow,
 } from './ledger-read.service';
 import type { CreateExpenseDto } from './dto/create-expense.dto';
+import type { UpdateExpenseDto } from './dto/update-expense.dto';
 
 /** One stored share as returned by the API (mirrors `ExpenseShareDto`). */
 export interface ExpenseShareView {
@@ -142,6 +147,137 @@ export class LedgerService {
     return this.toView(created);
   }
 
+  /**
+   * Edit an expense (UC-EXP-002 main; FR-EXP-006/008/010, BR-EXP-005/007).
+   *
+   * `NOT_LOGGER` and the group-scoped `404` are enforced by
+   * `ExpenseLoggerGuard` before this method; `expense` is the already-resolved
+   * permanent row. The update is **partial**: every omitted DTO field keeps its
+   * stored value, and the effective values are validated with the create rules
+   * in the same service-level order `NO_PARTICIPANTS` →
+   * `PARTICIPANT_NOT_MEMBER` → `SPLIT_SUM_MISMATCH` (03 §4).
+   *
+   * Shares are the expense's permanent record (BR-EXP-005): they are recomputed
+   * with a fresh draw **iff** the amount, participants or split type changed —
+   * a description-only or payer-only edit leaves the stored shares untouched.
+   * `editedAt` is set on success only; a rejected edit touches nothing.
+   */
+  async update(
+    groupId: string,
+    expense: LedgerExpenseRow,
+    dto: UpdateExpenseDto,
+  ): Promise<ExpenseView> {
+    const storedShares = await this.read.findSharesForExpenses([expense.id]);
+    const storedParticipantIds = storedShares.map(
+      (share) => share.participantId,
+    );
+
+    // Effective values: omitted fields keep their stored value.
+    const amountKurus = dto.amountKurus ?? expense.amountKurus;
+    const payerId = dto.payerId ?? expense.payerId;
+    const splitType = dto.splitType ?? expense.splitType;
+    const participantIds = dto.participantIds ?? storedParticipantIds;
+
+    // 1. Participant-list shape (BR-EXP-002) — same order as create.
+    if (participantIds.length === 0) {
+      throw new AppError(
+        400,
+        'NO_PARTICIPANTS',
+        DEFAULT_MESSAGES.NO_PARTICIPANTS,
+      );
+    }
+
+    // 2. Payer and participants must belong to the group (FR-EXP-003).
+    for (const userId of [payerId, ...participantIds]) {
+      if (!(await this.memberships.isMember(groupId, userId))) {
+        throw new AppError(
+          400,
+          'PARTICIPANT_NOT_MEMBER',
+          DEFAULT_MESSAGES.PARTICIPANT_NOT_MEMBER,
+        );
+      }
+    }
+
+    // 3. Recompute trigger (FR-EXP-006/BR-EXP-005): amount, participants or
+    //    split type changed → fresh draw / fresh exact arithmetic; otherwise
+    //    the stored shares stand.
+    const amountChanged = amountKurus !== expense.amountKurus;
+    const splitTypeChanged = splitType !== expense.splitType;
+    const participantsChanged = !sameParticipantSet(
+      participantIds,
+      storedParticipantIds,
+    );
+    const recompute = amountChanged || splitTypeChanged || participantsChanged;
+
+    let shares: SplitShare[] | null = null;
+    if (recompute) {
+      // For EXACT, the per-participant amounts default to the stored shares
+      // (the permanent record) when the caller supplies none — an amount-only
+      // edit is validated against them (TC-EXP-017).
+      const exactAmounts =
+        splitType === 'EXACT'
+          ? (dto.exactAmounts ??
+            Object.fromEntries(
+              storedShares.map((share) => [
+                share.participantId,
+                share.shareKurus,
+              ]),
+            ))
+          : undefined;
+      const split = splitExpense(
+        { amountKurus, participantIds, splitType, exactAmounts },
+        this.random,
+      );
+      if (!split.ok) {
+        throw new AppError(
+          400,
+          'SPLIT_SUM_MISMATCH',
+          DEFAULT_MESSAGES.SPLIT_SUM_MISMATCH,
+        );
+      }
+      shares = split.shares;
+    }
+
+    // 4. Expense (+ replaced shares) in one transaction (NFR-EXP-003).
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.expense.update({
+        where: { id: expense.id },
+        data: {
+          description: dto.description ?? expense.description,
+          amountKurus,
+          payerId,
+          splitType,
+          editedAt: new Date(),
+        },
+        select: EXPENSE_ROW_SELECT,
+      });
+      if (shares !== null) {
+        await tx.expenseShare.deleteMany({ where: { expenseId: expense.id } });
+        await tx.expenseShare.createMany({
+          data: shares.map((share) => ({
+            expenseId: expense.id,
+            participantId: share.participantId,
+            shareKurus: share.shareKurus,
+          })),
+        });
+      }
+      return row;
+    });
+
+    return this.toView(updated);
+  }
+
+  /**
+   * Delete an expense permanently (UC-EXP-003 main; FR-EXP-009/012,
+   * BR-EXP-011, NFR-EXP-005). `NOT_LOGGER` and the `404` are enforced by
+   * `ExpenseLoggerGuard`. The `expense_shares` rows cascade at the store
+   * (02-data-model.md §4) — a hard delete, no archive table, no soft-delete
+   * flag.
+   */
+  async delete(expense: LedgerExpenseRow): Promise<void> {
+    await this.prisma.expense.delete({ where: { id: expense.id } });
+  }
+
   /** Expense detail for a member; `404` when it does not exist in the group. */
   async getDetail(groupId: string, expenseId: string): Promise<ExpenseView> {
     const expense = await this.read.findGroupExpense(groupId, expenseId);
@@ -228,4 +364,20 @@ export class LedgerService {
         : { ...view, editedAt: expense.editedAt.toISOString() };
     });
   }
+}
+
+/**
+ * Whether two participant-id lists are the same **set** (order-insensitive).
+ * The recompute trigger (FR-EXP-006) concerns the participant set, so a
+ * re-ordered list is not a change.
+ */
+function sameParticipantSet(
+  a: readonly string[],
+  b: readonly string[],
+): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const ids = new Set(a);
+  return b.every((id) => ids.has(id));
 }
