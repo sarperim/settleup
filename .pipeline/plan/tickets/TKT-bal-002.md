@@ -1,6 +1,8 @@
 # TKT-bal-002: Balance engine & balances endpoint (derived, D-ARCH-004)
 
-- Status: todo
+- Status: in-review (PR #29 → dev, opened 2026-09-29)
+- PR: https://github.com/sarperim/settleup/pull/29
+- Evidence: TC-BAL-006, TC-EXP-023, TC-EXP-024 green. Targeted `npx vitest run --project integration <three specs>` → 3 files / 3 tests passed, 0 failed (red first: 3 failed with 404 before the endpoint existed). Integration regression → 72 files / 129 passed. Full `npx vitest run` (unit + integration + web-unit) → 100 files / 278 passed. `pnpm --filter api typecheck` and `pnpm --filter api lint` clean.
 - Size: M
 - Scope: **Create** the settlement module root files in `apps/api/src/settlement/` (`settlement.module.ts`, balances controller/service — C5) and integration specs:
   - Balance engine per arch §5.2 / 02 §7 reference SQL: per (group, member) derived on demand — `Σ paid expenses − Σ own shares + Σ settled payments made − Σ settled payments received` — integer kuruş, one Prisma aggregation per group, always filtered by groupId (never cross-group). Nothing materialized (D-ARCH-004).
