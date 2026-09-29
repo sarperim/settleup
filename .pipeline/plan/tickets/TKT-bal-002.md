@@ -1,6 +1,6 @@
 # TKT-bal-002: Balance engine & balances endpoint (derived, D-ARCH-004)
 
-- Status: in-review (PR #29 → dev, opened 2026-09-29)
+- Status: done
 - PR: https://github.com/sarperim/settleup/pull/29
 - Evidence: TC-BAL-006, TC-EXP-023, TC-EXP-024 green. Targeted `npx vitest run --project integration <three specs>` → 3 files / 3 tests passed, 0 failed (red first: 3 failed with 404 before the endpoint existed). Integration regression → 72 files / 129 passed. Full `npx vitest run` (unit + integration + web-unit) → 100 files / 278 passed. `pnpm --filter api typecheck` and `pnpm --filter api lint` clean.
 - Size: M

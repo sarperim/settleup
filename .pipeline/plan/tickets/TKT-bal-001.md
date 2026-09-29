@@ -1,6 +1,6 @@
 # TKT-bal-001: Suggestion engine — minimum-transaction settlement plans (pure)
 
-- Status: in-review
+- Status: done
 - PR: https://github.com/sarperim/settleup/pull/28
 - Size: M
 - Scope: **Create** `apps/api/src/settlement/engine/**` (pure functions, no DB, no Nest wiring) and unit specs in `apps/api/test/unit/**`:
