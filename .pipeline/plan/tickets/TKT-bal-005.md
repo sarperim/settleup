@@ -1,6 +1,6 @@
 # TKT-bal-005: Settlement contract & invariants — SC-005 completion, isolation, retention, CSRF
 
-- Status: in-review
+- Status: done
 - PR: https://github.com/sarperim/settleup/pull/32
 - Size: S
 - Scope: **Create** specs under `apps/api/test/integration/**` (test-only ticket; minimal defect fixes within `apps/api/src/settlement/**` flow through the PR review — flagged, not scope creep):

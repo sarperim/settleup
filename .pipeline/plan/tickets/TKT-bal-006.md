@@ -1,6 +1,6 @@
 # TKT-bal-006: Balances & settle-up UI (e2e)
 
-- Status: in-review
+- Status: done
 - PR: https://github.com/sarperim/settleup/pull/33
 - Size: M
 - Scope: **Create** the balances and settle-up tabs in `apps/web/src/**` (replacing the group-view placeholders) and e2e specs:
