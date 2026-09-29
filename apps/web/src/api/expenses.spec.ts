@@ -11,6 +11,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type {
   CreateExpenseRequestDto,
+  EditExpenseRequestDto,
   ExpenseDto,
   ExpenseResponseDto,
   ExpensesResponseDto,
@@ -91,5 +92,37 @@ describe('expensesApi — request shaping (03 §3b)', () => {
     expect(calls[0]!.init.method).toBe('POST');
     expect((calls[0]!.init.headers as Record<string, string>)[CSRF_HEADER]).toBe(CSRF_HEADER_VALUE);
     expect(JSON.parse(String(calls[0]!.init.body))).toEqual(request);
+  });
+
+  it('fetches an expense detail via GET /api/groups/:groupId/expenses/:expenseId, encoding both ids', async () => {
+    const body: ExpenseResponseDto = { expense: EXPENSE };
+    const { expenses, calls } = makeApi([jsonResponse(200, body)]);
+
+    await expect(expenses.detail('g 1', 'e 1')).resolves.toEqual(body);
+    expect(calls[0]!.url).toBe(`${API_BASE_PATH}/groups/g%201/expenses/e%201`);
+    expect(calls[0]!.init.method).toBe('GET');
+    expect((calls[0]!.init.headers as Record<string, string>)[CSRF_HEADER]).toBeUndefined();
+  });
+
+  it('edits an expense via PATCH /api/groups/:groupId/expenses/:expenseId with the body and CSRF header', async () => {
+    const request: EditExpenseRequestDto = { amountKurus: 4500 };
+    const body: ExpenseResponseDto = { expense: { ...EXPENSE, amountKurus: 4500 } };
+    const { expenses, calls } = makeApi([jsonResponse(200, body)]);
+
+    await expect(expenses.update('g 1', 'e 1', request)).resolves.toEqual(body);
+    expect(calls[0]!.url).toBe(`${API_BASE_PATH}/groups/g%201/expenses/e%201`);
+    expect(calls[0]!.init.method).toBe('PATCH');
+    expect((calls[0]!.init.headers as Record<string, string>)[CSRF_HEADER]).toBe(CSRF_HEADER_VALUE);
+    expect(JSON.parse(String(calls[0]!.init.body))).toEqual(request);
+  });
+
+  it('deletes an expense via DELETE /api/groups/:groupId/expenses/:expenseId with the CSRF header and no body', async () => {
+    const { expenses, calls } = makeApi([new Response(null, { status: 204 })]);
+
+    await expect(expenses.remove('g 1', 'e 1')).resolves.toBeUndefined();
+    expect(calls[0]!.url).toBe(`${API_BASE_PATH}/groups/g%201/expenses/e%201`);
+    expect(calls[0]!.init.method).toBe('DELETE');
+    expect((calls[0]!.init.headers as Record<string, string>)[CSRF_HEADER]).toBe(CSRF_HEADER_VALUE);
+    expect(calls[0]!.init.body).toBeUndefined();
   });
 });

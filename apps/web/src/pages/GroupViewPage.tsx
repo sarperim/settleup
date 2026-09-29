@@ -8,7 +8,11 @@
  * `GET /api/groups/:groupId/members` (UC-GRP-005, FR-GRP-010). The **Expenses**
  * tab is the group ledger (TKT-exp-005): the group's expenses, newest first,
  * from `GET /api/groups/:groupId/expenses` (UC-EXP-004, FR-EXP-011), with the
- * entry point to the add-expense form. The Balances / Settle-up tabs stay
+ * entry point to the add-expense form. TKT-exp-006 adds the logger-only
+ * edit/delete affordances on each entry (BR-EXP-007's UI aspect): only the
+ * logged-in expense's `logger` sees Edit (→ the edit form) and Delete
+ * (`DELETE …/expenses/:expenseId`); the API enforces the same rule. The
+ * Balances / Settle-up tabs stay
  * labelled placeholders until their domain UI tickets land. The group's name
  * and — for the creator only — its join code come from
  * `GET /api/groups/:groupId` (FR-GRP-002).
@@ -57,6 +61,9 @@ export function GroupViewPage() {
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [decidingId, setDecidingId] = useState<string | null>(null);
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   // The server returns `joinCode` iff the caller is the creator (FR-GRP-002);
   // the caller's own id compared with `group.creator.id` is the same signal
   // from the detail payload and gates the creator-only handling section.
@@ -73,6 +80,8 @@ export function GroupViewPage() {
     setActiveTab('expenses');
     setRequests([]);
     setRequestsError(null);
+    setDeletingId(null);
+    setDeleteError(null);
 
     if (groupId === undefined) {
       setError('Missing group id.');
@@ -137,6 +146,28 @@ export function GroupViewPage() {
       cancelled = true;
     };
   }, [groupId, isCreator]);
+
+  /**
+   * Delete an expense (UC-EXP-003 main; FR-EXP-009/012). The affordance is
+   * rendered for the logger only (BR-EXP-007's UI aspect); the API enforces
+   * the same rule with `403 NOT_LOGGER`. On success the entry leaves the local
+   * ledger — no refetch needed.
+   */
+  async function removeExpense(expenseId: string) {
+    if (groupId === undefined) {
+      return;
+    }
+    setDeletingId(expenseId);
+    setDeleteError(null);
+    try {
+      await expensesApi.remove(groupId, expenseId);
+      setExpenses((current) => current.filter((expense) => expense.id !== expenseId));
+    } catch (caught) {
+      setDeleteError(caught instanceof ApiError ? caught.message : 'Could not delete the expense.');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function decide(requestId: string, decision: 'APPROVED' | 'REJECTED') {
     if (groupId === undefined) {
@@ -215,6 +246,7 @@ export function GroupViewPage() {
               </Link>
             </p>
           )}
+          {deleteError !== null && <p role="alert">{deleteError}</p>}
           {loading ? (
             <p>Loading expenses…</p>
           ) : error === null ? (
@@ -239,6 +271,26 @@ export function GroupViewPage() {
                       <time data-testid="expense-edited-at" dateTime={expense.editedAt}>
                         edited {new Date(expense.editedAt).toLocaleString()}
                       </time>
+                    )}
+                    {groupId !== undefined && user !== null && expense.logger.id === user.id && (
+                      <span data-testid="expense-actions">
+                        <Link
+                          to={SPA_ROUTES.editExpense(groupId, expense.id)}
+                          data-testid="edit-expense-link"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          data-testid="delete-expense"
+                          disabled={deletingId === expense.id}
+                          onClick={() => {
+                            void removeExpense(expense.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </span>
                     )}
                   </li>
                 ))}

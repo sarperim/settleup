@@ -1,6 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-import { e2eIdentity, login, logout, register, type Credentials } from './helpers/auth';
+import { e2eIdentity, login, logout, register } from './helpers/auth';
+import { createGroupViaUi, requestToJoin } from './helpers/group-setup';
 import { PAGE_LOAD_BUDGET_MS, measureMedianPageLoad } from './helpers/timing';
 
 /**
@@ -17,32 +18,6 @@ import { PAGE_LOAD_BUDGET_MS, measureMedianPageLoad } from './helpers/timing';
  * tab, so TC-GRP-031 measures it at the group-view URL's `#join-requests`
  * anchor.
  */
-
-interface GroupSetup {
-  groupUrl: string;
-  code: string;
-}
-
-/** Register `creator`, create a group through the UI, return its URL and code. */
-async function createGroupViaUi(page: Page, creator: Credentials, name: string): Promise<GroupSetup> {
-  await register(page, creator);
-  await page.getByRole('button', { name: 'Create group', exact: true }).click();
-  await page.getByLabel('Group name').fill(name);
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
-  await expect(page).toHaveURL(/\/groups\/[^/]+$/);
-  const groupUrl = page.url();
-  const code = ((await page.getByTestId('join-code').textContent()) ?? '').trim();
-  expect(code).toMatch(/^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{8}$/);
-  return { groupUrl, code };
-}
-
-/** Open `/join/<code>`, confirm the request, and wait for the pending status. */
-async function requestToJoin(page: Page, code: string): Promise<void> {
-  await page.goto(`/join/${code}`);
-  await expect(page.getByTestId('join-group-name')).toBeVisible();
-  await page.getByRole('button', { name: 'Request to join' }).click();
-  await expect(page.getByTestId('join-request-pending')).toBeVisible();
-}
 
 test('TC-GRP-027 — join a group by code through the UI', async ({ page, browser }) => {
   const hank = e2eIdentity('hank', 'Hank', 'password-1');
