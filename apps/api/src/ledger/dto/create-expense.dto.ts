@@ -75,7 +75,12 @@ class ExactAmountsRangeConstraint implements ValidatorConstraintInterface {
     if (typeof dto.amountKurus !== 'number') {
       return true;
     }
-    const participantIds = new Set(dto.participantIds ?? []);
+    // Defensive: `@Validate` runs even after `@IsArray` on `participantIds`
+    // fails, so a non-array value must not reach `new Set()` (that would throw
+    // a raw TypeError → unhandled 500, contradicting the "never a 500" contract
+    // below). A non-array yields only the `@IsArray` DTO errors → 400.
+    const ids = Array.isArray(dto.participantIds) ? dto.participantIds : [];
+    const participantIds = new Set(ids);
     for (const [participantId, share] of Object.entries(
       value as Record<string, unknown>,
     )) {

@@ -112,6 +112,21 @@ const cases: readonly Case[] = [
       splitType: 'EQUAL',
     }),
   },
+  {
+    // N-1/S-2a: a non-iterable `participantIds` with EXACT + `exactAmounts`
+    // must not make the `ExactAmountsRangeConstraint` throw; the `@IsArray`
+    // failure alone must surface as a 400, never an unhandled 500.
+    label: 'non-array participantIds with EXACT split',
+    field: 'participantIds',
+    body: (ids) => ({
+      description: 'Non-array participants',
+      amountKurus: 1000,
+      payerId: ids.alice,
+      participantIds: 12345,
+      splitType: 'EXACT',
+      exactAmounts: {},
+    }),
+  },
 ];
 
 describe('Ledger create input hardening', () => {
