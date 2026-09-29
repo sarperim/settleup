@@ -1,6 +1,6 @@
 # TKT-bal-005: Settlement contract & invariants — SC-005 completion, isolation, retention, CSRF
 
-- Status: todo
+- Status: in-progress
 - Size: S
 - Scope: **Create** specs under `apps/api/test/integration/**` (test-only ticket; minimal defect fixes within `apps/api/src/settlement/**` flow through the PR review — flagged, not scope creep):
   - TC-BAL-016 — zero-sum holds after settle → settle → undo → undo (the settlement half of the SC-005 operation matrix; with TC-EXP-023 from TKT-bal-002 the full matrix is green — NFR-BAL-001).
