@@ -3,12 +3,15 @@
  * TKT-groups-006; 03-api-design.md §6).
  *
  * Tab scaffold for the four §6 sections (Expenses / Balances / Settle-up /
- * Members). The **Members** tab is functional here: it lists the group's
- * members by display name (never email — FR-ACC-008) with a creator marker,
- * from `GET /api/groups/:groupId/members` (UC-GRP-005, FR-GRP-010). The
- * Expenses / Balances / Settle-up tabs stay labelled placeholders until their
- * domain UI tickets land. The group's name and — for the creator only — its
- * join code come from `GET /api/groups/:groupId` (FR-GRP-002).
+ * Members). The **Members** tab lists the group's members by display name
+ * (never email — FR-ACC-008) with a creator marker, from
+ * `GET /api/groups/:groupId/members` (UC-GRP-005, FR-GRP-010). The **Expenses**
+ * tab is the group ledger (TKT-exp-005): the group's expenses, newest first,
+ * from `GET /api/groups/:groupId/expenses` (UC-EXP-004, FR-EXP-011), with the
+ * entry point to the add-expense form. The Balances / Settle-up tabs stay
+ * labelled placeholders until their domain UI tickets land. The group's name
+ * and — for the creator only — its join code come from
+ * `GET /api/groups/:groupId` (FR-GRP-002).
  *
  * The **join-request handling view** (TKT-groups-006) lives inside this page:
  * when the caller is the group's creator, a "Join requests" section lists the
@@ -24,16 +27,17 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import type { GroupDto, JoinRequestDto, MemberDto } from 'shared';
+import { Link, useParams } from 'react-router-dom';
+import type { ExpenseDto, GroupDto, JoinRequestDto, MemberDto } from 'shared';
 
+import { expensesApi } from '../api/expenses';
 import { groupsApi } from '../api/groups';
 import { ApiError } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
-import { GROUP_TABS, GROUP_TAB_LABELS, type GroupTab } from '../routes';
+import { formatKurus, type Kurus } from '../money';
+import { GROUP_TABS, GROUP_TAB_LABELS, SPA_ROUTES, type GroupTab } from '../routes';
 
-const TAB_PLACEHOLDERS: Record<Exclude<GroupTab, 'members'>, string> = {
-  expenses: 'Group ledger placeholder.',
+const TAB_PLACEHOLDERS: Record<Exclude<GroupTab, 'members' | 'expenses'>, string> = {
   balances: 'Per-member balances placeholder.',
   'settle-up': 'Settle-up suggestions placeholder.',
 };
@@ -44,6 +48,7 @@ export function GroupViewPage() {
   const [activeTab, setActiveTab] = useState<GroupTab>('expenses');
   const [group, setGroup] = useState<GroupDto | null>(null);
   const [members, setMembers] = useState<MemberDto[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +67,7 @@ export function GroupViewPage() {
     // previous group's data (PR #17 K-2 / S-1).
     setGroup(null);
     setMembers([]);
+    setExpenses([]);
     setError(null);
     setLoading(true);
     setActiveTab('expenses');
@@ -76,13 +82,15 @@ export function GroupViewPage() {
     let cancelled = false;
     void (async () => {
       try {
-        const [groupResponse, membersResponse] = await Promise.all([
+        const [groupResponse, membersResponse, expensesResponse] = await Promise.all([
           groupsApi.detail(groupId),
           groupsApi.members(groupId),
+          expensesApi.list(groupId),
         ]);
         if (!cancelled) {
           setGroup(groupResponse.group);
           setMembers(membersResponse.members);
+          setExpenses(expensesResponse.expenses);
         }
       } catch (caught) {
         if (!cancelled) {
@@ -198,6 +206,46 @@ export function GroupViewPage() {
             ))}
           </ul>
         ) : null
+      ) : activeTab === 'expenses' ? (
+        <>
+          {groupId !== undefined && (
+            <p>
+              <Link to={SPA_ROUTES.addExpense(groupId)} data-testid="add-expense-link">
+                Add expense
+              </Link>
+            </p>
+          )}
+          {loading ? (
+            <p>Loading expenses…</p>
+          ) : error === null ? (
+            expenses.length === 0 ? (
+              <p data-testid="expenses-empty">No expenses yet.</p>
+            ) : (
+              <ul data-testid="expense-list">
+                {expenses.map((expense) => (
+                  <li key={expense.id} data-testid="expense-item">
+                    <span data-testid="expense-description">{expense.description}</span>
+                    <span data-testid="expense-amount">
+                      {formatKurus(expense.amountKurus as Kurus)}
+                    </span>
+                    <span data-testid="expense-payer">Paid by {expense.payer.displayName}</span>
+                    <span data-testid="expense-participants">
+                      For {expense.shares.map((share) => share.participant.displayName).join(', ')}
+                    </span>
+                    <time dateTime={expense.createdAt}>
+                      {new Date(expense.createdAt).toLocaleString()}
+                    </time>
+                    {expense.editedAt !== undefined && (
+                      <time data-testid="expense-edited-at" dateTime={expense.editedAt}>
+                        edited {new Date(expense.editedAt).toLocaleString()}
+                      </time>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )
+          ) : null}
+        </>
       ) : (
         <p>{TAB_PLACEHOLDERS[activeTab]}</p>
       )}
