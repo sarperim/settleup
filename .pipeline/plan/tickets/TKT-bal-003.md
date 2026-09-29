@@ -1,6 +1,7 @@
 # TKT-bal-003: Settle-up view — outstanding plan + settled facts
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/30
 - Size: S
 - Scope: **Extend** `apps/api/src/settlement/**` and add integration specs:
   - `GET /api/groups/:groupId/settlements` — `200 { outstanding: [{ payer, recipient, amountKurus }], settled: [{ id, payer, recipient, amountKurus, paidAt, undoneAt? }] }`:
