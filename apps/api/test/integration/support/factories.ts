@@ -181,6 +181,60 @@ export async function joinAndApprove(
   return (response.body as { joinRequest: JoinRequestFixture }).joinRequest;
 }
 
+/** The expense request body the `createExpense` factory drives (03 §3b). */
+export interface CreateExpenseInput {
+  readonly description: string;
+  readonly amountKurus: number;
+  readonly payerId: string;
+  readonly participantIds: readonly string[];
+  readonly splitType: 'EQUAL' | 'EXACT';
+  readonly exactAmounts?: Readonly<Record<string, number>>;
+}
+
+/** One stored share of a created expense (FR-ACC-008 references). */
+export interface ExpenseShareFixture {
+  readonly participant: UserRefFixture;
+  readonly shareKurus: number;
+}
+
+/** An expense as returned by the create/detail routes (03 §3b). */
+export interface CreatedExpense {
+  readonly id: string;
+  readonly description: string;
+  readonly amountKurus: number;
+  readonly splitType: 'EQUAL' | 'EXACT';
+  readonly payer: UserRefFixture;
+  readonly logger: UserRefFixture;
+  readonly shares: ExpenseShareFixture[];
+  readonly createdAt: string;
+  readonly editedAt?: string;
+}
+
+/**
+ * Strategy §5 factory: drive `POST /api/groups/:groupId/expenses` and return
+ * the created `{ expense }`. Lands with TKT-exp-002, which owns the route.
+ */
+export async function createExpense(
+  server: Server,
+  memberCookie: string,
+  groupId: string,
+  expenseInput: CreateExpenseInput,
+): Promise<CreatedExpense> {
+  const response = await api(server)
+    .post(`/api/groups/${groupId}/expenses`)
+    .set(CSRF_HEADERS)
+    .set('Cookie', memberCookie)
+    .send(expenseInput);
+
+  if (response.status !== 201) {
+    throw new Error(
+      `createExpense fixture failed: expected 201, got ${response.status} (${JSON.stringify(response.body)})`,
+    );
+  }
+
+  return (response.body as { expense: CreatedExpense }).expense;
+}
+
 /**
  * Seed a membership row directly (strategy §5: direct Prisma seeding is
  * permitted for **read-path fixtures** — member-list/overview/group-detail
