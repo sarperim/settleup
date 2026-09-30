@@ -1,6 +1,8 @@
 # TKT-integ-001: SC-006 authorization matrix — anonymous & non-member across the full route table
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/37
+- Evidence: TC-ACC-015 + TC-GRP-021 green — `pnpm vitest run apps/api/test/integration/tc-acc-015-anonymous-matrix.spec.ts apps/api/test/integration/tc-grp-021-non-member-matrix.spec.ts` 2 files / 27 tests passed; `pnpm test` 122 files / 340 tests passed; mutation proof both matrices fail on a nulled auth/group guard (src reverted).
 - Size: M
 - Scope: **Create** specs under `apps/api/test/integration/**` (test-only ticket; minimal defect fixes flow through the PR review — flagged, not scope creep). Both TCs were deferred at their domain gates because they enumerate the route tables of **all four domains** — executable now that every route exists:
   - TC-ACC-015 — the exhaustive anonymous matrix: all **21** protected endpoints (the complete API surface minus register/login), called with no session cookie and syntactically valid bodies/paths → `401 UNAUTHENTICATED`, error-envelope shape. Closes FR-ACC-009's exhaustive matrix.
