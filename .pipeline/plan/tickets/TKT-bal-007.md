@@ -1,6 +1,8 @@
 # TKT-bal-007: SC-007 full lifecycle end-to-end (CI step-4 smoke)
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/34
+- Evidence: TC-BAL-025 green — `pnpm exec playwright test test/e2e/lifecycle-ui.spec.ts` 1 passed; `pnpm test:e2e` system 1 + Playwright 24/24 passed (fresh DB, production build); `pnpm test` 313/313; `pnpm lint` and `pnpm typecheck` pass.
 - Size: S
 - Scope: **Create** the flagship e2e journey in `apps/web/test/e2e/**` — the SC-007 lifecycle through the UI against the production build:
   - TC-BAL-025 — two fresh browser contexts, fresh e2e database: register `lale@test.local` → create group "Trip" → register `mert@test.local` → join via the join code → lale approves → lale logs an expense (100.00, payer lale, both participants, even equal split → deterministic 50.00/50.00) → settle-up view → mark the suggested payment paid (by its recipient) → balances show 0.00 → mert undoes the settlement → balances revert → the outstanding suggestion (mert → lale 50.00) renders again — **the debt is outstanding again** (SC-007's terminal assertion).
