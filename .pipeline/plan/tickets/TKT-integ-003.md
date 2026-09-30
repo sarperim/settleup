@@ -1,6 +1,6 @@
 # TKT-integ-003: Deployment & ops package — Docker Compose, Caddy, runbook
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope: **Create** the deployment artifacts and operational runbook (no TCs by design — production is not tested by the test plan, strategy §6; NFR-ACC-002 is review-verified):
   - `docker-compose.yml` + `Caddyfile` + api `Dockerfile` (+ `.dockerignore`) per arch §10: caddy :80/:443 with automatic TLS proxying to the api; api container (Node, serves `/api/*` + the built SPA); `postgres:17-alpine` volume-backed; `restart: unless-stopped` on all services.
