@@ -27,8 +27,12 @@ The app domain was chosen to be small and real — money, auth, and permissions 
 ## Repository layout
 
 ```
+docker-compose.yml  Deployment stack — caddy + api + postgres (architecture §10)
+Caddyfile           Edge config — automatic TLS, reverse-proxies to api
+.env.example        Committed deployment env template (copy to .env)
 apps/
-  api/          NestJS API — auth, groups, expenses, balances (domain modules land per ticket)
+  api/          NestJS API — auth, groups, expenses, balances
+    Dockerfile  api image build (context: repo root)
   web/          React SPA — pages, layout, API client
 packages/
   shared/       DTO types, kuruş money helpers, constants (frozen contract)
@@ -69,13 +73,105 @@ For SPA development with hot reload: `pnpm --filter web dev` (Vite dev server).
 | `pnpm test:system` | System specs — run against a **built** API (e.g. the owner CLI) |
 | `pnpm test:e2e` | Full e2e phase: create/migrate `E2E_DATABASE_URL` database → system specs → Playwright browser tests against the built api + web |
 
-## Owner CLI
+## Deployment & operations (owner-run)
 
-Reset a user's password (writes the Argon2id hash and revokes all of the user's sessions in one operation — no HTTP surface):
+The production artifact is one Docker Compose stack (architecture §10). It is deliberately **owner-run** — CI never deploys (04 §7); it only gates the branch.
+
+```
+docker compose up -d
+  caddy :80/:443  → automatic TLS, reverse-proxies to api:3007
+  api   :3007     → NestJS server: serves /api/* + the built SPA from one origin
+  postgres :5432  → volume-backed (postgres:17-alpine)
+```
+
+### First deploy
+
+Prerequisites: Docker Engine with the Compose v2 plugin, and a host (a small VPS or a free-tier container host).
 
 ```bash
-node apps/api/dist/scripts/set-password.js <email>   # new password via piped stdin
+cp .env.example .env        # then set POSTGRES_PASSWORD and SITE_ADDRESS
+docker compose build
+docker compose up -d        # boots postgres, api, caddy
+docker compose run --rm api npx prisma migrate deploy
 ```
+
+Migrations are **not** run on boot — `prisma migrate deploy` is an explicit, owner-controlled step (architecture §10). Run it again after every deploy that adds a migration. The `api` service is never published to the host: only Caddy reaches it on the internal network (the login throttle keys off `req.ip` under Express `trust proxy: 1`).
+
+Verify the stack is serving through Caddy:
+
+```bash
+curl -i http://localhost/           # 200, the SPA index.html
+curl -i http://localhost/api/nope   # 404, the standard {"error":{...}} envelope
+```
+
+### Resource envelope
+
+NFR-ACC-002: the single application container runs within **≤ 512 MB RAM / 1 vCPU**. `docker-compose.yml` enforces this on the `api` service (`mem_limit: 512m`, `cpus: 1.0`). Caddy and PostgreSQL are left uncapped; both are lightweight at the expected scale (≈ 8 users, ≤ 5 groups).
+
+### TLS and local verification
+
+Caddy terminates TLS automatically (architecture §4/§10). In production, set `SITE_ADDRESS` in `.env` to your public hostname (e.g. `settleup.example.com`) and point its DNS record at the host — Caddy obtains and renews the certificate on the first request, with no certificate files or renewal cron to manage.
+
+For local verification the default `SITE_ADDRESS=http://localhost` serves plain HTTP on :80, so the `curl` checks above work without a domain. Automatic TLS is Caddy's runtime behaviour and cannot be exercised locally without a public domain. When testing auth over plain HTTP, set `COOKIE_SECURE=false` in `.env` (otherwise the browser refuses to store the `Secure` session cookie).
+
+### Environment variables
+
+`docker compose` reads `.env` from the repository root; `.env.example` is the committed template. `apps/api/.env.example` documents the app-level defaults. The same values (plus `POSTGRES_*`) are listed here.
+
+| Variable | Default | Used by | Purpose |
+|---|---|---|---|
+| `DATABASE_URL` | composed from `POSTGRES_*` | api | Prisma/PostgreSQL connection string |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `settleup` / `settleup` / `settleup` | postgres, api | Database credentials — **change the password before exposing the host** |
+| `PORT` | `3007` | api | HTTP listen port (architecture §10) |
+| `LOG_LEVEL` | `info` | api | pino level: `trace`…`fatal` |
+| `COOKIE_SECURE` | `true` | api | `Secure` session cookie; `false` only for plain-HTTP local testing |
+| `ARGON2_MEMORY_COST` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | `19456` / `2` / `1` | api | Argon2id parameters (NFR-ACC-001) |
+| `SITE_ADDRESS` | `http://localhost` | caddy | Caddy site address; a hostname enables automatic TLS |
+| `ACME_EMAIL` | — | caddy | Optional ACME account email for Let's Encrypt |
+
+No secrets are committed: `.env` is gitignored, `.env.example` is the template, and the committed defaults are non-secret placeholders for local verification only.
+
+### Backups
+
+RPO ≤ 24 h: a nightly logical dump written to the `postgres-backups` volume, plus a monthly off-site copy (architecture §10).
+
+```cron
+# crontab -e — nightly at 03:15 (escape % as \% in crontab)
+15 3 * * * cd /opt/settleup && docker compose exec -T postgres \
+  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /backups/settleup-$(date +\%F).dump'
+```
+
+Copy the dumps off-site monthly (and prune old ones):
+
+```bash
+mkdir -p ~/settleup-backups
+docker compose cp postgres:/backups/. ~/settleup-backups/
+# rsync or scp ~/settleup-backups to your off-site store
+```
+
+Restore (into the running database):
+
+```bash
+docker compose exec -T postgres \
+  sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists /backups/<file>.dump'
+```
+
+### Owner password reset (UC-ACC-005)
+
+There is no HTTP endpoint or in-app admin role (architecture §9 flag 5, §10). The owner runs the CLI inside the running container; it writes an Argon2id hash directly to the database and **deletes all of the account's sessions** in the same operation — there is no acting session to preserve, and a reset is the suspected-compromise / forgotten-password path.
+
+```bash
+docker compose exec api node dist/scripts/set-password.js alice@example.com
+# prompts on stdin; works non-interactively when piped (`-T` disables the TTY):
+printf '%s\n' 'new-strong-password' | docker compose exec -T api \
+  node dist/scripts/set-password.js alice@example.com
+```
+
+The user logs in again with the new password. The same script can be run against a host build: `node apps/api/dist/scripts/set-password.js <email>`.
+
+### CI first-time setup
+
+CI is the quality gate; deployment is not part of it. To enable the gate on a fresh GitHub repository, follow the checklist in [`04-ci-pipeline.md` §5](.pipeline/architecture/04-ci-pipeline.md): push the repo, watch the first **CI** run go green, protect `master` (require a pull request and the **Lint, test & build** status check), then merge only on green. `dev` is the working trunk; `master` receives the promoted, release-ready state.
 
 ## Branching & CI
 

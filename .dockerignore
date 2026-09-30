@@ -1,0 +1,25 @@
+# Build context is the repository root. Keep the image small and deterministic.
+.git
+.gitignore
+.github
+.pipeline
+**/*.md
+
+# Installed inside the image, never copied from the host.
+node_modules
+**/node_modules
+
+# Built inside the image (shared → api → web).
+dist
+**/dist
+
+# Test / tooling output.
+coverage
+playwright-report
+test-results
+**/*.tsbuildinfo
+
+# Secrets never enter a layer. The committed template is not needed at runtime.
+.env
+.env.*
+!.env.example
