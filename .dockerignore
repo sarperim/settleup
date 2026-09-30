@@ -19,7 +19,11 @@ playwright-report
 test-results
 **/*.tsbuildinfo
 
-# Secrets never enter a layer. The committed template is not needed at runtime.
+# Secrets never enter a layer. Match at any depth so a nested `apps/api/.env`
+# cannot be baked into the runtime image via `COPY --from=build /app /app`.
+# The committed templates are not needed in the image either.
 .env
 .env.*
-!.env.example
+**/.env
+**/.env.*
+**/.npmrc

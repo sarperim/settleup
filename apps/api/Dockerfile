@@ -48,8 +48,9 @@ RUN apt-get update \
 
 WORKDIR /app
 # The workspace's node_modules (pnpm symlink layout), the generated Prisma
-# client, and every build output travel together from the build stage.
-COPY --from=build /app /app
+# client, and every build output travel together from the build stage. Own the
+# tree by the unprivileged `node` user so the runtime never needs root.
+COPY --from=build --chown=node:node /app /app
 
 # Run from `apps/api` so `dist/main.js`, `dist/scripts/set-password.js` and
 # `prisma/schema.prisma` all resolve exactly as arch §10 documents.
@@ -57,5 +58,9 @@ WORKDIR /app/apps/api
 
 ENV NODE_ENV=production
 EXPOSE 3007
+
+# Drop root: the server and the one-off `npx prisma migrate deploy` only need
+# read access to /app and network access to PostgreSQL.
+USER node
 
 CMD ["node", "dist/main.js"]

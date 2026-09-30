@@ -121,32 +121,35 @@ For local verification the default `SITE_ADDRESS=http://localhost` serves plain 
 | Variable | Default | Used by | Purpose |
 |---|---|---|---|
 | `DATABASE_URL` | composed from `POSTGRES_*` | api | Prisma/PostgreSQL connection string |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `settleup` / `settleup` / `settleup` | postgres, api | Database credentials — **change the password before exposing the host** |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `settleup` / *(required, no default)* / `settleup` | postgres, api | Database credentials — **set the password before the first deploy**; the stack fails closed without it |
 | `PORT` | `3007` | api | HTTP listen port (architecture §10) |
 | `LOG_LEVEL` | `info` | api | pino level: `trace`…`fatal` |
 | `COOKIE_SECURE` | `true` | api | `Secure` session cookie; `false` only for plain-HTTP local testing |
 | `ARGON2_MEMORY_COST` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | `19456` / `2` / `1` | api | Argon2id parameters (NFR-ACC-001) |
 | `SITE_ADDRESS` | `http://localhost` | caddy | Caddy site address; a hostname enables automatic TLS |
-| `ACME_EMAIL` | — | caddy | Optional ACME account email for Let's Encrypt |
 
 No secrets are committed: `.env` is gitignored, `.env.example` is the template, and the committed defaults are non-secret placeholders for local verification only.
 
 ### Backups
 
-RPO ≤ 24 h: a nightly logical dump written to the `postgres-backups` volume, plus a monthly off-site copy (architecture §10).
+RPO ≤ 24 h: a nightly logical dump written to the `postgres-backups` volume, plus a monthly off-site copy (architecture §10). A dump holds password hashes and live session tokens, so keep it owner-readable only and encrypt the off-site copy.
 
 ```cron
 # crontab -e — nightly at 03:15 (escape % as \% in crontab)
 15 3 * * * cd /opt/settleup && docker compose exec -T postgres \
-  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /backups/settleup-$(date +\%F).dump'
+  sh -c 'umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /backups/settleup-$(date +\%F).dump; find /backups -name "settleup-*.dump" -mtime +30 -delete'
 ```
 
-Copy the dumps off-site monthly (and prune old ones):
+`umask 077` writes each dump `0600`; the same command prunes dumps older than 30 days.
+
+Copy the dumps off-site monthly — encrypted, since the file is secret material:
 
 ```bash
 mkdir -p ~/settleup-backups
 docker compose cp postgres:/backups/. ~/settleup-backups/
-# rsync or scp ~/settleup-backups to your off-site store
+chmod 600 ~/settleup-backups/*.dump
+# Encrypt before it leaves the host, then rsync/scp the ciphertext:
+#   age -r <recipient> -o settleup-$(date +%F).dump.age settleup-$(date +%F).dump
 ```
 
 Restore (into the running database):
@@ -162,9 +165,11 @@ There is no HTTP endpoint or in-app admin role (architecture §9 flag 5, §10). 
 
 ```bash
 docker compose exec api node dist/scripts/set-password.js alice@example.com
-# prompts on stdin; works non-interactively when piped (`-T` disables the TTY):
-printf '%s\n' 'new-strong-password' | docker compose exec -T api \
-  node dist/scripts/set-password.js alice@example.com
+# prompts on stdin; works non-interactively when piped (`-T` disables the TTY).
+# Read the password without echoing it or leaking it into shell history:
+read -rsp 'New password: ' NEWPASS && printf '%s\n' "$NEWPASS" | \
+  docker compose exec -T api node dist/scripts/set-password.js alice@example.com
+unset NEWPASS
 ```
 
 The user logs in again with the new password. The same script can be run against a host build: `node apps/api/dist/scripts/set-password.js <email>`.
