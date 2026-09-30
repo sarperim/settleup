@@ -1,6 +1,6 @@
 # TKT-integ-001: SC-006 authorization matrix — anonymous & non-member across the full route table
 
-- Status: in-review
+- Status: done (merged via PR #37 → dev, 2026-09-30; review loop closed clean at pass 1, zero blocking findings — blast radius FULL, all three reviewers approve: compliance compliant / code approve / security approve; round artifact `reviews/TKT-integ-001-round-1.md`, open non-blocking should-fix/nits C-1…C-5 + LOW security S-1…S-3 recorded there)
 - PR: https://github.com/sarperim/settleup/pull/37
 - Evidence: TC-ACC-015 + TC-GRP-021 green — `pnpm vitest run apps/api/test/integration/tc-acc-015-anonymous-matrix.spec.ts apps/api/test/integration/tc-grp-021-non-member-matrix.spec.ts` 2 files / 27 tests passed; `pnpm test` 122 files / 340 tests passed; mutation proof both matrices fail on a nulled auth/group guard (src reverted).
 - Size: M

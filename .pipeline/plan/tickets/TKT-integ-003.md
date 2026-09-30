@@ -1,6 +1,6 @@
 # TKT-integ-003: Deployment & ops package — Docker Compose, Caddy, runbook
 
-- Status: in-review
+- Status: done (merged via PR #35 → dev, 2026-09-30; review loop closed clean at pass 3 after two fix rounds — pass-1 blocking compliance violation (inert `ACME_EMAIL`) and pass-2 fixer-introduced `PORT` regression both fixed and verified; all three reviewers approve on `cf36d47`, CI green; round artifacts `reviews/TKT-integ-003-round-{1,2,3}.md`; OPEN OWNER ACTION: acceptance criterion 1 is unverified — run the README first-deploy checklist on a Docker host, since no Docker engine existed in the coder/review sandboxes and CI has no deploy step by design)
 - PR: https://github.com/sarperim/settleup/pull/35
 - Evidence: host-run Dockerfile command sequence — `pnpm install --frozen-lockfile`, `pnpm --filter api exec prisma generate`, `pnpm build` all pass; built api booted → `GET /` 200 SPA index, `GET /api/nonexistent` 404 error envelope; `docker compose config` (v2.40.3) valid, all services `restart: unless-stopped`, api `mem_limit 512m`/`cpus 1.0`; `caddy validate` valid for both local HTTP and a production hostname (auto HTTP→HTTPS); `hadolint` clean. Docker engine absent in the coder sandbox → container `build`/`up`/`migrate` flagged for owner/verifier confirmation (see PR body).
 - Size: M

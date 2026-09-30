@@ -1,6 +1,6 @@
 # TKT-integ-002: Email-absence across all group-scoped payloads (FR-ACC-008 completion)
 
-- Status: in-review
+- Status: done (merged via PR #36 → dev, 2026-09-30; review loop closed clean at pass 1, zero blocking findings — blast radius FULL, all three reviewer lenses approve; round artifact `reviews/TKT-integ-002-round-1.md`, open non-blocking nits CODE-1/CODE-2 recorded there)
 - PR: https://github.com/sarperim/settleup/pull/36
 - Size: S
 - Scope: **Create** the spec under `apps/api/test/integration/**` (test-only; fixes via review). Deferred at the Accounts gate because it enumerates group-scoped read endpoints of all domains — executable now:
