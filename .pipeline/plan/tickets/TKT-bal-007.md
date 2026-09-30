@@ -1,6 +1,6 @@
 # TKT-bal-007: SC-007 full lifecycle end-to-end (CI step-4 smoke)
 
-- Status: in-review
+- Status: done (merged via PR #34 → dev, 2026-09-30; review loop closed clean at pass 1, zero blocking findings — blast radius FULL, all three reviewers ran; compliance faithful on TC-BAL-025, security approve, code approve with 3 non-blocking nits C-1…C-3; round artifact `reviews/TKT-bal-007-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/34
 - Evidence: TC-BAL-025 green — `pnpm exec playwright test test/e2e/lifecycle-ui.spec.ts` 1 passed; `pnpm test:e2e` system 1 + Playwright 24/24 passed (fresh DB, production build); `pnpm test` 313/313; `pnpm lint` and `pnpm typecheck` pass.
 - Size: S
