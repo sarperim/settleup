@@ -1,6 +1,6 @@
 # TKT-integ-002: Email-absence across all group-scoped payloads (FR-ACC-008 completion)
 
-- Status: todo
+- Status: in-progress
 - Size: S
 - Scope: **Create** the spec under `apps/api/test/integration/**` (test-only; fixes via review). Deferred at the Accounts gate because it enumerates group-scoped read endpoints of all domains — executable now:
   - TC-ACC-018 — fixture built with the factories (alice creator; bob approved member; carol pending join request; one expense paid by alice splitting alice+bob); as alice call all seven group-scoped read endpoints (`GET /api/groups/:groupId`, `…/members`, `…/join-requests`, `…/expenses`, `…/expenses/:expenseId`, `…/balances`, `…/settlements`); assert in **every** response: (a) no member's email string appears anywhere in the body, (b) every user reference carries `displayName`, (c) the three members are distinguishable by display name. Closes FR-ACC-008's payload matrix (its UI-side promises, TC-GRP-028/030 and TC-EXP-031, are already green in their domain tickets).
