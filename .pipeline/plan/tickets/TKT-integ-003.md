@@ -1,6 +1,8 @@
 # TKT-integ-003: Deployment & ops package — Docker Compose, Caddy, runbook
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/35
+- Evidence: host-run Dockerfile command sequence — `pnpm install --frozen-lockfile`, `pnpm --filter api exec prisma generate`, `pnpm build` all pass; built api booted → `GET /` 200 SPA index, `GET /api/nonexistent` 404 error envelope; `docker compose config` (v2.40.3) valid, all services `restart: unless-stopped`, api `mem_limit 512m`/`cpus 1.0`; `caddy validate` valid for both local HTTP and a production hostname (auto HTTP→HTTPS); `hadolint` clean. Docker engine absent in the coder sandbox → container `build`/`up`/`migrate` flagged for owner/verifier confirmation (see PR body).
 - Size: M
 - Scope: **Create** the deployment artifacts and operational runbook (no TCs by design — production is not tested by the test plan, strategy §6; NFR-ACC-002 is review-verified):
   - `docker-compose.yml` + `Caddyfile` + api `Dockerfile` (+ `.dockerignore`) per arch §10: caddy :80/:443 with automatic TLS proxying to the api; api container (Node, serves `/api/*` + the built SPA); `postgres:17-alpine` volume-backed; `restart: unless-stopped` on all services.
