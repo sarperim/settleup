@@ -1,0 +1,29 @@
+# Build context is the repository root. Keep the image small and deterministic.
+.git
+.gitignore
+.github
+.pipeline
+**/*.md
+
+# Installed inside the image, never copied from the host.
+node_modules
+**/node_modules
+
+# Built inside the image (shared → api → web).
+dist
+**/dist
+
+# Test / tooling output.
+coverage
+playwright-report
+test-results
+**/*.tsbuildinfo
+
+# Secrets never enter a layer. Match at any depth so a nested `apps/api/.env`
+# cannot be baked into the runtime image via `COPY --from=build /app /app`.
+# The committed templates are not needed in the image either.
+.env
+.env.*
+**/.env
+**/.env.*
+**/.npmrc

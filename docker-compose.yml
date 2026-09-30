@@ -1,0 +1,95 @@
+# Settle Up — owner-operated deployment (01-system-architecture.md §10).
+#
+#   docker compose up -d
+#     caddy:80/443   → automatic TLS, reverse-proxies to api:3007
+#     api:3007       → NestJS server, serves /api/* + the built SPA
+#     postgres:5432  → volume-backed (postgres:17-alpine)
+#
+# Applying migrations is a deliberate, owner-run step — never on boot:
+#
+#   docker compose run --rm api npx prisma migrate deploy
+#
+# Copy `.env.example` → `.env` and set a strong POSTGRES_PASSWORD plus the
+# public SITE_ADDRESS before exposing this host to the internet. No password is
+# committed: the stack fails closed until POSTGRES_PASSWORD is set.
+name: settleup
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-settleup}
+      # No fallback: require it explicitly so `docker compose up` fails fast
+      # with an actionable message rather than initialising PostgreSQL with a
+      # known or empty credential.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:-settleup}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Nightly pg_dump target (see "Backups" in README.md).
+      - postgres-backups:/backups
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-settleup} -d ${POSTGRES_DB:-settleup}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-settleup}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-settleup}
+      PORT: "3007"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # Architecture-pinned Argon2id defaults (§7 NFR-ACC-001); overridable
+      # from `.env` to keep the documented env reference honest.
+      ARGON2_MEMORY_COST: ${ARGON2_MEMORY_COST:-19456}
+      ARGON2_TIME_COST: ${ARGON2_TIME_COST:-2}
+      ARGON2_PARALLELISM: ${ARGON2_PARALLELISM:-1}
+    # The API is never published to the host: only Caddy reaches it, on the
+    # internal compose network (foundation-004 review F-S-3 — the login
+    # throttle keys off req.ip under Express `trust proxy: 1`).
+    expose:
+      - "3007"
+    # NFR-ACC-002: the single application container fits ≤ 512 MB / 1 vCPU.
+    mem_limit: 512m
+    cpus: 1.0
+    # Defence in depth: the api runs as the unprivileged `node` user (Dockerfile)
+    # and needs no Linux capabilities.
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      # Production: the public hostname (automatic TLS). Local: plain HTTP.
+      SITE_ADDRESS: ${SITE_ADDRESS:-http://localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  postgres-data:
+  postgres-backups:
+  caddy-data:
+  caddy-config:

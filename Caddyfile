@@ -1,0 +1,19 @@
+# Settle Up edge — Caddy automatic TLS (01-system-architecture.md §10).
+#
+# Caddy terminates TLS and reverse-proxies every request to the api service.
+# The api server itself serves both `/api/*` and the built SPA from one origin.
+#
+# Production: set SITE_ADDRESS to the public hostname (e.g.
+# `settleup.example.com`) and point its DNS record at this host. Caddy obtains
+# and renews the certificate automatically on the first request — no
+# certificate files to manage, no renewal cron.
+#
+# Local verification: the default (`SITE_ADDRESS` unset → `http://localhost`)
+# serves plain HTTP on :80, so `curl -i http://localhost/` works with no
+# domain. Automatic TLS is Caddy's runtime behaviour and cannot be exercised
+# locally without a public domain.
+
+{$SITE_ADDRESS:http://localhost} {
+	encode zstd gzip
+	reverse_proxy api:3007
+}
