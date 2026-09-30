@@ -122,11 +122,13 @@ For local verification the default `SITE_ADDRESS=http://localhost` serves plain 
 |---|---|---|---|
 | `DATABASE_URL` | composed from `POSTGRES_*` | api | Prisma/PostgreSQL connection string |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `settleup` / *(required, no default)* / `settleup` | postgres, api | Database credentials — **set the password before the first deploy**; the stack fails closed without it |
-| `PORT` | `3007` | api | HTTP listen port (architecture §10) |
+| `PORT` | `3007` | api | HTTP listen port — fixed at `3007` in the compose deployment (architecture §10: Caddy proxies to `api:3007` and the api `expose`s `3007`) |
 | `LOG_LEVEL` | `info` | api | pino level: `trace`…`fatal` |
 | `COOKIE_SECURE` | `true` | api | `Secure` session cookie; `false` only for plain-HTTP local testing |
 | `ARGON2_MEMORY_COST` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | `19456` / `2` / `1` | api | Argon2id parameters (NFR-ACC-001) |
 | `SITE_ADDRESS` | `http://localhost` | caddy | Caddy site address; a hostname enables automatic TLS |
+
+`POSTGRES_PASSWORD` is interpolated verbatim into the `DATABASE_URL` connection string, so choose a password without URI-reserved characters (`@ : / # %`) — a reserved character would corrupt the connection string and the api would fail to reach PostgreSQL.
 
 No secrets are committed: `.env` is gitignored, `.env.example` is the template, and the committed defaults are non-secret placeholders for local verification only.
 

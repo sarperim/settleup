@@ -10,8 +10,8 @@
 #   docker compose run --rm api npx prisma migrate deploy
 #
 # Copy `.env.example` → `.env` and set a strong POSTGRES_PASSWORD plus the
-# public SITE_ADDRESS before exposing this host to the internet. The committed
-# defaults are for local verification only and are not secrets.
+# public SITE_ADDRESS before exposing this host to the internet. No password is
+# committed: the stack fails closed until POSTGRES_PASSWORD is set.
 name: settleup
 
 services:
@@ -20,9 +20,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-settleup}
-      # No fallback: an unset password must fail closed (PostgreSQL refuses to
-      # initialise) rather than boot with a known credential.
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # No fallback: require it explicitly so `docker compose up` fails fast
+      # with an actionable message rather than initialising PostgreSQL with a
+      # known or empty credential.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
       POSTGRES_DB: ${POSTGRES_DB:-settleup}
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -48,7 +49,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-settleup}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-settleup}
-      PORT: ${PORT:-3007}
+      PORT: "3007"
       LOG_LEVEL: ${LOG_LEVEL:-info}
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       # Architecture-pinned Argon2id defaults (§7 NFR-ACC-001); overridable
