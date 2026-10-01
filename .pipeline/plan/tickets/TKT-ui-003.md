@@ -1,6 +1,6 @@
 # TKT-ui-003: Groups overview + join-by-code entry (closes UC-GRP-002 gap)
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/GroupsOverviewPage.tsx` (+ colocated CSS)

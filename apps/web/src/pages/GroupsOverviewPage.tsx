@@ -9,6 +9,12 @@
  * valid state (test plan TC-GRP-005). The overview never renders group data the
  * caller is not a member of — the API only ever returns the caller's own
  * groups.
+ *
+ * It also hosts the join-by-code entry (UC-GRP-002 step 1 "entering the code",
+ * PG-005): a code input that navigates to the existing `/join/:code` route,
+ * where PG-009 resolves the code and shows the group's name before confirming.
+ * No route-table change is involved; an unknown code is surfaced by the join
+ * page's code-not-found state (FR-GRP-004), not here.
  */
 
 import { useEffect, useState, type FormEvent } from 'react';
@@ -18,6 +24,7 @@ import { FIELD_LIMITS, type GroupDto } from 'shared';
 import { groupsApi } from '../api/groups';
 import { ApiError } from '../api/errors';
 import { SPA_ROUTES } from '../routes';
+import './GroupsOverviewPage.css';
 
 export function GroupsOverviewPage() {
   const navigate = useNavigate();
@@ -29,6 +36,9 @@ export function GroupsOverviewPage() {
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  const [joinCode, setJoinCode] = useState('');
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,8 +92,21 @@ export function GroupsOverviewPage() {
     }
   }
 
+  function onJoin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = joinCode.trim();
+    if (trimmed.length === 0) {
+      setJoinError('Enter a join code.');
+      return;
+    }
+    setJoinError(null);
+    // The join page (PG-009) resolves the code; an unknown code surfaces its
+    // code-not-found state there (FR-GRP-004).
+    navigate(SPA_ROUTES.join(trimmed));
+  }
+
   return (
-    <section>
+    <section className="groups-overview">
       <h1>Groups</h1>
 
       {loadError !== null && <p role="alert">{loadError}</p>}
@@ -102,36 +125,59 @@ export function GroupsOverviewPage() {
         </ul>
       )}
 
-      {showCreate ? (
-        <form onSubmit={onCreate} noValidate aria-label="Create a group">
-          <h2>Create a group</h2>
-          {createError !== null && <p role="alert">{createError}</p>}
-          <label htmlFor="new-group-name">Group name</label>
-          <input
-            id="new-group-name"
-            name="name"
-            type="text"
-            minLength={FIELD_LIMITS.groupName.minLength}
-            maxLength={FIELD_LIMITS.groupName.maxLength}
-            value={name}
-            onChange={(event) => {
-              setName(event.target.value);
-            }}
-          />
-          <button type="submit" disabled={creating}>
-            Create
-          </button>
-        </form>
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setShowCreate(true);
-          }}
-        >
-          Create group
-        </button>
-      )}
+      <div className="groups-overview__actions">
+        <div className="groups-overview__panel">
+          {showCreate ? (
+            <form onSubmit={onCreate} noValidate aria-label="Create a group">
+              <h2>Create a group</h2>
+              {createError !== null && <p role="alert">{createError}</p>}
+              <label htmlFor="new-group-name">Group name</label>
+              <input
+                id="new-group-name"
+                name="name"
+                type="text"
+                minLength={FIELD_LIMITS.groupName.minLength}
+                maxLength={FIELD_LIMITS.groupName.maxLength}
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                }}
+              />
+              <button type="submit" disabled={creating}>
+                Create
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreate(true);
+              }}
+            >
+              Create group
+            </button>
+          )}
+        </div>
+
+        <div className="groups-overview__panel">
+          <form onSubmit={onJoin} noValidate aria-label="Join a group by code">
+            <h2>Join a group</h2>
+            {joinError !== null && <p role="alert">{joinError}</p>}
+            <label htmlFor="join-code">Join code</label>
+            <input
+              id="join-code"
+              name="code"
+              type="text"
+              autoComplete="off"
+              value={joinCode}
+              onChange={(event) => {
+                setJoinCode(event.target.value);
+              }}
+            />
+            <button type="submit">Join</button>
+          </form>
+        </div>
+      </div>
     </section>
   );
 }
