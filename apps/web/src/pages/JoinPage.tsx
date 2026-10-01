@@ -16,9 +16,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { JoinInfoDto } from 'shared';
 
+import './JoinPage.css';
 import { groupsApi } from '../api/groups';
 import { ApiError } from '../api/errors';
-import './JoinPage.css';
 
 type Phase = 'loading' | 'resolved' | 'code-not-found' | 'error';
 
@@ -129,7 +129,7 @@ export function JoinPage() {
       <h1 className="join-page__title">Join group</h1>
       <p className="join-page__lede">
         You are joining{' '}
-        <strong className="join-page__name" data-testid="join-group-name">{info.groupName}</strong>.
+        <strong className="join-page__name" data-testid="join-group-name">{info.groupName}</strong>
       </p>
 
       {error !== null && (

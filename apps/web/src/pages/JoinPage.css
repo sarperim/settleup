@@ -17,10 +17,6 @@
   text-align: center;
 }
 
-.join-page__title {
-  margin-bottom: var(--space-4);
-}
-
 .join-page__lede {
   margin-bottom: var(--space-5);
   color: var(--color-text-muted);
