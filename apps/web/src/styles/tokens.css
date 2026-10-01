@@ -1,0 +1,94 @@
+/**
+ * Design tokens — Settle Up (TKT-ui-001).
+ *
+ * The single source of truth for the approved design direction
+ * (`00-ux-pages.md` § Design direction, 2026-10-01):
+ *
+ *   - light-beige base surfaces,
+ *   - a pastel-red accent family, used by the persistent nav bar,
+ *   - a warm type pairing (Fraunces display serif + Nunito humanist sans).
+ *
+ * `base.css` and `layout/RootLayout.css` consume these as CSS custom
+ * properties; no colour or font value is hard-coded outside this file.
+ * `styles/fonts.css` is the only other file allowed to name a typeface — it
+ * packages the self-hosted `@fontsource` files that back the tokens below.
+ *
+ * Font constraints come from the architecture, not taste: fonts are
+ * self-hosted / same-origin (helmet CSP, `01-system-architecture.md` §8.2) and
+ * the SPA initial bundle stays ≤ 300 KB gzipped (NFR-ACC-003 / SC-004).
+ */
+
+:root {
+  /* ── Surfaces — light beige base ─────────────────────────────────────── */
+  --color-surface: #f7f2e9;
+  --color-surface-raised: #fffdf8;
+  --color-surface-sunken: #efe7d8;
+  --color-border: #e3d8c6;
+  --color-border-strong: #cdbca2;
+
+  /* ── Text — warm browns ───────────────────────────────────────────────── */
+  --color-text: #3d3630;
+  --color-text-muted: #7c6f60;
+  --color-on-accent: #4a2a2c;
+
+  /* ── Pastel-red accent family ─────────────────────────────────────────── */
+  --color-accent: #e59a9d;
+  --color-accent-strong: #d97c80;
+  --color-accent-soft: #f8e2e3;
+  --color-accent-contrast: #4a2a2c;
+
+  /* ── Persistent nav bar (pastel red) ──────────────────────────────────── */
+  --color-nav-bg: #edb6b6;
+  --color-nav-text: #45292b;
+  --color-nav-active-bg: #d97c80;
+  --color-nav-active-text: #fffaf6;
+
+  /* ── Status ───────────────────────────────────────────────────────────── */
+  --color-success: #5f8f6f;
+  --color-success-soft: #e3efe5;
+  --color-danger: #c25b55;
+  --color-danger-soft: #f9e3e1;
+  --color-on-danger: #fffaf6;
+  --color-focus: #b5565a;
+
+  /* ── Typography — warm pairing ────────────────────────────────────────── */
+  --font-body: 'Nunito Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --font-size-xs: 0.78rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.18rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-size-3xl: 2.6rem;
+  --line-height: 1.55;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 600;
+  --font-weight-bold: 750;
+
+  /* ── Spacing scale ────────────────────────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* ── Radii ────────────────────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* ── Shadows ──────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgb(61 54 48 / 8%);
+  --shadow-md: 0 6px 18px rgb(61 54 48 / 10%);
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  --layout-max-width: 60rem;
+  --layout-gutter: var(--space-5);
+}
