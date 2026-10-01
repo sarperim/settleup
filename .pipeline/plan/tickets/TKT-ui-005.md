@@ -1,6 +1,7 @@
 # TKT-ui-005: Group view — Balances & Settle-up sections
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/45
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/GroupViewPage.tsx` (+ colocated CSS) — the balances and settle-up tab sections only
