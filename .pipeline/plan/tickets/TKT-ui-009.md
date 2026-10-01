@@ -1,6 +1,7 @@
 # TKT-ui-009: Join-by-code confirmation page
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/39
 - Size: S
 - Scope:
   - Modify: `apps/web/src/pages/JoinPage.tsx` (+ colocated CSS)
