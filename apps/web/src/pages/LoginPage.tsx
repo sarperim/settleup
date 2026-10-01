@@ -11,6 +11,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { UserResponseDto } from 'shared';
 
+import './LoginPage.css';
 import { api } from '../api/client';
 import { ApiError } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
@@ -39,41 +40,43 @@ export function LoginPage() {
   }
 
   return (
-    <section>
-      <h1>Log in</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      <form onSubmit={onSubmit} noValidate>
-        <label htmlFor="login-email">Email</label>
-        <input
-          id="login-email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value);
-          }}
-        />
+    <section className="login-page">
+      <div className="card login-card">
+        <h1>Log in</h1>
+        {error !== null && <p role="alert">{error}</p>}
+        <form onSubmit={onSubmit} noValidate>
+          <label htmlFor="login-email">Email</label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+            }}
+          />
 
-        <label htmlFor="login-password">Password</label>
-        <input
-          id="login-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value);
-          }}
-        />
+          <label htmlFor="login-password">Password</label>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+            }}
+          />
 
-        <button type="submit" disabled={submitting}>
-          Log in
-        </button>
-      </form>
-      <p>
-        Need an account? <Link to={SPA_ROUTES.register}>Create account</Link>
-      </p>
+          <button type="submit" disabled={submitting}>
+            Log in
+          </button>
+        </form>
+        <p className="login-switch muted">
+          Need an account? <Link to={SPA_ROUTES.register}>Create account</Link>
+        </p>
+      </div>
     </section>
   );
 }

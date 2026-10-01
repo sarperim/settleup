@@ -10,6 +10,7 @@
 import { useState, type FormEvent } from 'react';
 import { FIELD_LIMITS } from 'shared';
 
+import './ChangePasswordPage.css';
 import { api } from '../api/client';
 import { ApiError } from '../api/errors';
 
@@ -47,41 +48,47 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <section>
-      <h1>Change password</h1>
-      {changed && <p role="status">Password changed.</p>}
-      {error !== null && <p role="alert">{error}</p>}
-      <form onSubmit={onSubmit} noValidate>
-        <label htmlFor="change-current-password">Current password</label>
-        <input
-          id="change-current-password"
-          name="currentPassword"
-          type="password"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(event) => {
-            setCurrentPassword(event.target.value);
-          }}
-        />
+    <section className="change-password-page">
+      <div className="card change-password-card">
+        <h1>Change password</h1>
+        {changed && (
+          <p className="alert alert--success" role="status">
+            Password changed.
+          </p>
+        )}
+        {error !== null && <p role="alert">{error}</p>}
+        <form onSubmit={onSubmit} noValidate>
+          <label htmlFor="change-current-password">Current password</label>
+          <input
+            id="change-current-password"
+            name="currentPassword"
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(event) => {
+              setCurrentPassword(event.target.value);
+            }}
+          />
 
-        <label htmlFor="change-new-password">New password</label>
-        <input
-          id="change-new-password"
-          name="newPassword"
-          type="password"
-          autoComplete="new-password"
-          minLength={FIELD_LIMITS.password.minLength}
-          maxLength={FIELD_LIMITS.password.maxLength}
-          value={newPassword}
-          onChange={(event) => {
-            setNewPassword(event.target.value);
-          }}
-        />
+          <label htmlFor="change-new-password">New password</label>
+          <input
+            id="change-new-password"
+            name="newPassword"
+            type="password"
+            autoComplete="new-password"
+            minLength={FIELD_LIMITS.password.minLength}
+            maxLength={FIELD_LIMITS.password.maxLength}
+            value={newPassword}
+            onChange={(event) => {
+              setNewPassword(event.target.value);
+            }}
+          />
 
-        <button type="submit" disabled={submitting}>
-          Change password
-        </button>
-      </form>
+          <button type="submit" disabled={submitting}>
+            Change password
+          </button>
+        </form>
+      </div>
     </section>
   );
 }

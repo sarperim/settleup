@@ -1,0 +1,34 @@
+/**
+ * `/login` page styles (TKT-ui-002) — colocated with `LoginPage.tsx`.
+ *
+ * PG-002 presentation only: a centered, raised card on the beige surface.
+ * Every colour/type/size value resolves through a custom property from
+ * `styles/tokens.css`; nothing here changes the form's function, labels,
+ * roles or copy.
+ */
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  padding-block: var(--space-6);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.login-card form {
+  max-width: none;
+}
+
+/* The submit is the card's primary action: full width. */
+.login-card button[type='submit'] {
+  width: 100%;
+}
+
+.login-switch {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-sm);
+}
