@@ -1,6 +1,7 @@
 # TKT-ui-008: Edit-expense form
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/42
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/EditExpensePage.tsx` (+ colocated CSS)
