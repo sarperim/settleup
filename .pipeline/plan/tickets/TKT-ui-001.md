@@ -1,6 +1,7 @@
 # TKT-ui-001: Design system, global styles & app shell
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/38
 - Size: M
 - Scope:
   - Create: `apps/web/src/styles/tokens.css` (design tokens as CSS custom properties), `apps/web/src/styles/base.css` (element defaults + shared component classes: buttons, form controls, lists, cards, alerts), `apps/web/src/styles/fonts.css` (self-hosted font pairing), `apps/web/src/layout/RootLayout.css` (colocated shell styles)
