@@ -1,0 +1,58 @@
+/**
+ * `/join/:code` page styles (TKT-ui-009) — colocated with `JoinPage.tsx`.
+ *
+ * PG-009: a single confirmation card. The code holder learns the group's
+ * **name and nothing else** (FR-GRP-004), so the name is the one piece of
+ * group detail the page renders and it carries the visual weight. The confirm
+ * action sits below it; every non-happy state (request pending, already a
+ * member, code not found, re-request after rejection) reuses the same card.
+ *
+ * All colour/type values resolve through `tokens.css` custom properties — no
+ * hard-coded colour or font values outside the token layer.
+ */
+
+.join-page {
+  max-width: 32rem;
+  margin: var(--space-5) auto 0;
+  text-align: center;
+}
+
+.join-page__title {
+  margin-bottom: var(--space-4);
+}
+
+.join-page__lede {
+  margin-bottom: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+/* The group name — the only group detail shown before confirming. */
+.join-page__name {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+}
+
+.join-page__state {
+  margin: 0;
+  text-align: left;
+}
+
+.join-page__state + .join-page__state {
+  margin-top: var(--space-4);
+}
+
+.join-page__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-4);
+}
+
+.join-page__actions button {
+  min-width: 12rem;
+}
