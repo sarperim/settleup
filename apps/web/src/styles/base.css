@@ -105,7 +105,7 @@ label {
   color: var(--color-text);
 }
 
-input,
+input:not([type='checkbox']):not([type='radio']),
 select,
 textarea {
   width: 100%;
@@ -118,7 +118,14 @@ textarea {
   font: inherit;
 }
 
-input:hover,
+/* Checkboxes/radios keep their native size, not the text-control box. */
+input[type='checkbox'],
+input[type='radio'] {
+  width: auto;
+  accent-color: var(--color-accent-strong);
+}
+
+input:not([type='checkbox']):not([type='radio']):hover,
 select:hover,
 textarea:hover {
   border-color: var(--color-accent-strong);
@@ -152,7 +159,7 @@ button,
 }
 
 button:hover:not(:disabled),
-.btn:hover {
+.btn:hover:not(:disabled) {
   background-color: var(--color-accent-strong);
 }
 
@@ -167,7 +174,7 @@ button[aria-pressed='true'] {
   border-color: var(--color-border-strong);
 }
 
-.btn--secondary:hover {
+.btn--secondary:hover:not(:disabled) {
   background-color: var(--color-surface-sunken);
 }
 
@@ -177,13 +184,14 @@ button[aria-pressed='true'] {
   border-color: var(--color-danger);
 }
 
-.btn--danger:hover {
+.btn--danger:hover:not(:disabled) {
   filter: brightness(0.94);
 }
 
 /* ── Lists (cards by default) ────────────────────────────────────────────── */
 
-ul {
+ul,
+.list {
   display: grid;
   gap: var(--space-2);
   margin: 0 0 var(--space-5);
@@ -242,23 +250,4 @@ li {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
-}
-
-/* ── Tables ──────────────────────────────────────────────────────────────── */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: var(--space-2) var(--space-3);
-  text-align: left;
-  border-bottom: 1px solid var(--color-border);
-}
-
-th {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted);
 }
