@@ -1,10 +1,12 @@
 /**
- * Group view page styles (TKT-ui-004) — colocated with `GroupViewPage.tsx`.
+ * Group view page styles (TKT-ui-004; extended by TKT-ui-005) — colocated with
+ * `GroupViewPage.tsx`.
  *
- * Page shell + Expenses section of PG-006: the header region (group name and
- * the creator-only join code with its copy affordance), the section navigation,
- * and the group ledger. Later tickets (TKT-ui-005/006) own the balances /
- * settle-up / members / join-requests sections in the same file.
+ * TKT-ui-004 owns the page shell + Expenses section of PG-006: the header region
+ * (group name and the creator-only join code with its copy affordance), the
+ * section navigation, and the group ledger. TKT-ui-005 adds the **Balances** and
+ * **Settle-up** sections in the same file; TKT-ui-006 owns the members /
+ * join-requests regions.
  *
  * All colour/type values resolve through `tokens.css` custom properties; no
  * colour or font value is hard-coded here (TKT-ui-001 styling convention).
@@ -113,4 +115,120 @@
   background-color: var(--color-danger);
   border-color: var(--color-danger);
   filter: brightness(0.94);
+}
+
+/* ── Balances section (TKT-ui-005) ───────────────────────────────────────── */
+
+.group-balances {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.group-balance-list {
+  margin-bottom: 0;
+}
+
+/* One member per row: name on the left, signed amount on the right. */
+.group-balance {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-4);
+}
+
+.group-balance__member {
+  font-weight: var(--font-weight-medium);
+}
+
+.group-balance__amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+}
+
+/* A redundant colour cue for the sign: owed reads as success, owing as danger.
+ * The amount always carries its explicit sign, so colour is never the only
+ * signal (the zero state stays neutral). */
+.group-balance--positive .group-balance__amount {
+  color: var(--color-success);
+}
+
+.group-balance--negative .group-balance__amount {
+  color: var(--color-danger);
+}
+
+/* The visible zero-sum total — set apart from the rows it sums. */
+.group-balance-sum {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text);
+  background-color: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+/* ── Settle-up section (TKT-ui-005) ──────────────────────────────────────── */
+
+.group-settle-up {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Outstanding and Settled read as two peer panels of one section. */
+.group-settle-up__panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.group-settle-up__panel h3 {
+  margin-bottom: 0;
+}
+
+.group-settlement-list {
+  margin-bottom: 0;
+}
+
+/* A payment line: the sentence on the left, the party-only action on the right. */
+.group-settlement {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.group-settlement__text {
+  font-weight: var(--font-weight-medium);
+}
+
+.group-settlement__action {
+  flex: none;
+}
+
+/* Settled facts read quieter than live suggestions; an undone one is struck
+ * through and carries the explicit "Undone" label. */
+.group-settlement--settled .group-settlement__text,
+.group-settlement--undone .group-settlement__text {
+  color: var(--color-text-muted);
+}
+
+.group-settlement--undone .group-settlement__text {
+  text-decoration: line-through;
+}
+
+.group-settlement__badge {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-danger);
+  background-color: var(--color-danger-soft);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
 }
