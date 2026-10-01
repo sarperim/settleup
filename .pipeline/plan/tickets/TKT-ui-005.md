@@ -1,6 +1,6 @@
 # TKT-ui-005: Group view — Balances & Settle-up sections
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/GroupViewPage.tsx` (+ colocated CSS) — the balances and settle-up tab sections only
