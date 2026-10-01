@@ -19,7 +19,12 @@
  * (UC-BAL-002, FR-BAL-004/005/010): a suggestion offers **Mark paid** only to
  * the acting user when they are its payer or recipient (BR-BAL-006); a settled
  * entry offers **Undo** to its parties and an undone entry is labelled
- * (UC-BAL-003/004, FR-BAL-006…009). The group's name
+ * (UC-BAL-003/004, FR-BAL-006…009). TKT-ui-005 dresses these two sections in the
+ * TKT-ui-001 design direction (colocated `GroupViewPage.css`, `var(--…)` tokens
+ * only): signed balance rows plus an emphasised zero-sum total, and outstanding
+ * / settled panels whose party-only actions and undone label carry class hooks —
+ * presentation only, so every testid/role/label/text stays as the TCs assert.
+ * The group's name
  * and — for the creator only — its join code come from
  * `GET /api/groups/:groupId` (FR-GRP-002).
  *
@@ -67,6 +72,19 @@ import './GroupViewPage.css';
 function formatSignedKurus(kurus: number): string {
   const sign = kurus > 0 ? '+' : kurus < 0 ? '-' : '';
   return `${sign}${formatKurus(Math.abs(kurus) as Kurus)}`;
+}
+
+/**
+ * The sign of a member's derived balance, used only as a styling hook
+ * (TKT-ui-005): positive = the group owes the member, negative = the member
+ * owes the group, zero = settled up. The amount itself always carries the
+ * explicit sign, so the colour is a redundant cue, never the only signal.
+ */
+function balanceSign(balanceKurus: number): 'positive' | 'negative' | 'zero' {
+  if (balanceKurus > 0) {
+    return 'positive';
+  }
+  return balanceKurus < 0 ? 'negative' : 'zero';
 }
 
 /**
@@ -528,106 +546,143 @@ export function GroupViewPage() {
           ) : null}
         </div>
       ) : activeTab === 'balances' ? (
-        <>
+        <div className="group-balances">
           {financialError !== null && <p role="alert">{financialError}</p>}
           {balancesLoading && balances === null ? (
-            <p>Loading balances…</p>
+            <p className="muted">Loading balances…</p>
           ) : balances === null ? null : (
             <>
-              <ul data-testid="balance-list">
+              <ul className="list group-balance-list" role="list" data-testid="balance-list">
                 {balances.balances.map((entry) => (
-                  <li key={entry.member.id} data-testid="balance-item">
-                    <span data-testid="balance-member">{entry.member.displayName}</span>
-                    <span data-testid="balance-amount">{formatSignedKurus(entry.balanceKurus)}</span>
+                  <li
+                    className={`group-balance group-balance--${balanceSign(entry.balanceKurus)}`}
+                    key={entry.member.id}
+                    data-testid="balance-item"
+                  >
+                    <span className="group-balance__member" data-testid="balance-member">
+                      {entry.member.displayName}
+                    </span>
+                    <span className="group-balance__amount" data-testid="balance-amount">
+                      {formatSignedKurus(entry.balanceKurus)}
+                    </span>
                   </li>
                 ))}
               </ul>
-              <p data-testid="balance-sum">Total: {formatSignedKurus(balances.sumKurus)}</p>
+              <p className="group-balance-sum" data-testid="balance-sum">
+                Total: {formatSignedKurus(balances.sumKurus)}
+              </p>
             </>
           )}
-        </>
+        </div>
       ) : (
-        <>
+        <div className="group-settle-up">
           {financialError !== null && <p role="alert">{financialError}</p>}
           {settleUpLoading && settleUp === null ? (
-            <p>Loading settle-up…</p>
+            <p className="muted">Loading settle-up…</p>
           ) : settleUp === null ? null : (
             <>
-              <h3>Outstanding</h3>
-              {settleUp.outstanding.length === 0 ? (
-                <p data-testid="outstanding-empty">Nothing outstanding.</p>
-              ) : (
-                <ul data-testid="outstanding-list">
-                  {settleUp.outstanding.map((suggestion) => {
-                    const key = `${suggestion.payer.id}:${suggestion.recipient.id}:${String(suggestion.amountKurus)}`;
-                    return (
-                      <li key={key} data-testid="outstanding-item">
-                        <span data-testid="outstanding-text">
+              <section
+                className="group-settle-up__panel"
+                aria-labelledby="settle-up-outstanding-heading"
+              >
+                <h3 id="settle-up-outstanding-heading">Outstanding</h3>
+                {settleUp.outstanding.length === 0 ? (
+                  <p className="muted" data-testid="outstanding-empty">
+                    Nothing outstanding.
+                  </p>
+                ) : (
+                  <ul
+                    className="list group-settlement-list"
+                    role="list"
+                    data-testid="outstanding-list"
+                  >
+                    {settleUp.outstanding.map((suggestion) => {
+                      const key = `${suggestion.payer.id}:${suggestion.recipient.id}:${String(suggestion.amountKurus)}`;
+                      return (
+                        <li className="group-settlement" key={key} data-testid="outstanding-item">
+                          <span className="group-settlement__text" data-testid="outstanding-text">
+                            {paymentLabel(
+                              suggestion.payer.displayName,
+                              suggestion.recipient.displayName,
+                              suggestion.amountKurus,
+                            )}
+                          </span>
+                          {isSuggestionParty(suggestion, user?.id) && (
+                            <button
+                              type="button"
+                              className="btn group-settlement__action"
+                              data-testid="mark-paid"
+                              disabled={mutatingKey === key}
+                              onClick={() => {
+                                void markPaid(suggestion);
+                              }}
+                            >
+                              Mark paid
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              <section
+                className="group-settle-up__panel"
+                aria-labelledby="settle-up-settled-heading"
+              >
+                <h3 id="settle-up-settled-heading">Settled</h3>
+                {settleUp.settled.length === 0 ? (
+                  <p className="muted" data-testid="settled-empty">
+                    No settled payments yet.
+                  </p>
+                ) : (
+                  <ul
+                    className="list group-settlement-list"
+                    role="list"
+                    data-testid="settled-list"
+                  >
+                    {settleUp.settled.map((settlement) => (
+                      <li
+                        className={`group-settlement group-settlement--${settlementStatus(settlement).toLowerCase()}`}
+                        key={settlement.id}
+                        data-testid="settled-item"
+                        data-status={settlementStatus(settlement)}
+                      >
+                        <span className="group-settlement__text" data-testid="settled-text">
                           {paymentLabel(
-                            suggestion.payer.displayName,
-                            suggestion.recipient.displayName,
-                            suggestion.amountKurus,
+                            settlement.payer.displayName,
+                            settlement.recipient.displayName,
+                            settlement.amountKurus,
                           )}
                         </span>
-                        {isSuggestionParty(suggestion, user?.id) && (
-                          <button
-                            type="button"
-                            data-testid="mark-paid"
-                            disabled={mutatingKey === key}
-                            onClick={() => {
-                              void markPaid(suggestion);
-                            }}
-                          >
-                            Mark paid
-                          </button>
+                        {settlementStatus(settlement) === 'UNDONE' && (
+                          <span className="group-settlement__badge" data-testid="settled-undone">
+                            Undone
+                          </span>
                         )}
+                        {settlementStatus(settlement) === 'SETTLED' &&
+                          isSuggestionParty(settlement, user?.id) && (
+                            <button
+                              type="button"
+                              className="btn group-settlement__action"
+                              data-testid="undo-settlement"
+                              disabled={mutatingKey === settlement.id}
+                              onClick={() => {
+                                void undoSettlement(settlement.id);
+                              }}
+                            >
+                              Undo
+                            </button>
+                          )}
                       </li>
-                    );
-                  })}
-                </ul>
-              )}
-
-              <h3>Settled</h3>
-              {settleUp.settled.length === 0 ? (
-                <p data-testid="settled-empty">No settled payments yet.</p>
-              ) : (
-                <ul data-testid="settled-list">
-                  {settleUp.settled.map((settlement) => (
-                    <li
-                      key={settlement.id}
-                      data-testid="settled-item"
-                      data-status={settlementStatus(settlement)}
-                    >
-                      <span data-testid="settled-text">
-                        {paymentLabel(
-                          settlement.payer.displayName,
-                          settlement.recipient.displayName,
-                          settlement.amountKurus,
-                        )}
-                      </span>
-                      {settlementStatus(settlement) === 'UNDONE' && (
-                        <span data-testid="settled-undone">Undone</span>
-                      )}
-                      {settlementStatus(settlement) === 'SETTLED' &&
-                        isSuggestionParty(settlement, user?.id) && (
-                          <button
-                            type="button"
-                            data-testid="undo-settlement"
-                            disabled={mutatingKey === settlement.id}
-                            onClick={() => {
-                              void undoSettlement(settlement.id);
-                            }}
-                          >
-                            Undo
-                          </button>
-                        )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                    ))}
+                  </ul>
+                )}
+              </section>
             </>
           )}
-        </>
+        </div>
       )}
       </section>
 
