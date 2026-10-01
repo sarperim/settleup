@@ -13,6 +13,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FIELD_LIMITS, type UserResponseDto } from 'shared';
 
+import './RegisterPage.css';
 import { api } from '../api/client';
 import { ApiError } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
@@ -82,60 +83,62 @@ export function RegisterPage() {
   }
 
   return (
-    <section>
-      <h1>Create account</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      <form onSubmit={onSubmit} noValidate>
-        <label htmlFor="register-display-name">Display name</label>
-        <input
-          id="register-display-name"
-          name="displayName"
-          type="text"
-          minLength={FIELD_LIMITS.displayName.minLength}
-          maxLength={FIELD_LIMITS.displayName.maxLength}
-          value={displayName}
-          onChange={(event) => {
-            setDisplayName(event.target.value);
-          }}
-          aria-invalid={fieldErrors.displayName !== undefined}
-        />
-        {fieldErrors.displayName !== undefined && <p role="alert">{fieldErrors.displayName}</p>}
+    <section className="register-page">
+      <div className="card register-card">
+        <h1>Create account</h1>
+        {error !== null && <p role="alert">{error}</p>}
+        <form onSubmit={onSubmit} noValidate>
+          <label htmlFor="register-display-name">Display name</label>
+          <input
+            id="register-display-name"
+            name="displayName"
+            type="text"
+            minLength={FIELD_LIMITS.displayName.minLength}
+            maxLength={FIELD_LIMITS.displayName.maxLength}
+            value={displayName}
+            onChange={(event) => {
+              setDisplayName(event.target.value);
+            }}
+            aria-invalid={fieldErrors.displayName !== undefined}
+          />
+          {fieldErrors.displayName !== undefined && <p role="alert">{fieldErrors.displayName}</p>}
 
-        <label htmlFor="register-email">Email</label>
-        <input
-          id="register-email"
-          name="email"
-          type="email"
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value);
-          }}
-          aria-invalid={fieldErrors.email !== undefined}
-        />
-        {fieldErrors.email !== undefined && <p role="alert">{fieldErrors.email}</p>}
+          <label htmlFor="register-email">Email</label>
+          <input
+            id="register-email"
+            name="email"
+            type="email"
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+            }}
+            aria-invalid={fieldErrors.email !== undefined}
+          />
+          {fieldErrors.email !== undefined && <p role="alert">{fieldErrors.email}</p>}
 
-        <label htmlFor="register-password">Password</label>
-        <input
-          id="register-password"
-          name="password"
-          type="password"
-          minLength={FIELD_LIMITS.password.minLength}
-          maxLength={FIELD_LIMITS.password.maxLength}
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value);
-          }}
-          aria-invalid={fieldErrors.password !== undefined}
-        />
-        {fieldErrors.password !== undefined && <p role="alert">{fieldErrors.password}</p>}
+          <label htmlFor="register-password">Password</label>
+          <input
+            id="register-password"
+            name="password"
+            type="password"
+            minLength={FIELD_LIMITS.password.minLength}
+            maxLength={FIELD_LIMITS.password.maxLength}
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+            }}
+            aria-invalid={fieldErrors.password !== undefined}
+          />
+          {fieldErrors.password !== undefined && <p role="alert">{fieldErrors.password}</p>}
 
-        <button type="submit" disabled={submitting}>
-          Create account
-        </button>
-      </form>
-      <p>
-        Already have an account? <Link to={SPA_ROUTES.login}>Log in</Link>
-      </p>
+          <button type="submit" disabled={submitting}>
+            Create account
+          </button>
+        </form>
+        <p className="register-switch muted">
+          Already have an account? <Link to={SPA_ROUTES.login}>Log in</Link>
+        </p>
+      </div>
     </section>
   );
 }
