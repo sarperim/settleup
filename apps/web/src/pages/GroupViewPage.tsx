@@ -56,6 +56,7 @@ import { ApiError } from '../api/errors';
 import { useAuth } from '../auth/AuthContext';
 import { formatKurus, type Kurus } from '../money';
 import { GROUP_TABS, GROUP_TAB_LABELS, SPA_ROUTES, type GroupTab } from '../routes';
+import './GroupViewPage.css';
 
 /**
  * Render a signed kuruş amount for display. Balances are plain signed numbers
@@ -120,10 +121,34 @@ export function GroupViewPage() {
   const [financialError, setFinancialError] = useState<string | null>(null);
   const [mutatingKey, setMutatingKey] = useState<string | null>(null);
 
+  // The join-code copy affordance (TKT-ui-004). `navigator.clipboard` is only
+  // present in a secure context; when it is missing or the write is rejected
+  // the affordance degrades to a non-blocking hint — the code stays on screen
+  // and selectable, and the page never throws.
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle');
+
   // The server returns `joinCode` iff the caller is the creator (FR-GRP-002);
   // the caller's own id compared with `group.creator.id` is the same signal
   // from the detail payload and gates the creator-only handling section.
   const isCreator = group !== null && user !== null && group.creator.id === user.id;
+
+  /** Write the creator-visible join code to the clipboard (PG-006). */
+  const copyJoinCode = useCallback(async () => {
+    const code = group?.joinCode;
+    if (code === undefined) {
+      return;
+    }
+    try {
+      if (typeof navigator === 'undefined' || navigator.clipboard?.writeText === undefined) {
+        setCopyStatus('failed');
+        return;
+      }
+      await navigator.clipboard.writeText(code);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('failed');
+    }
+  }, [group?.joinCode]);
 
   /** Load the derived balances (UC-BAL-001; FR-BAL-001/002/003). */
   const loadBalances = useCallback(async () => {
@@ -188,6 +213,7 @@ export function GroupViewPage() {
     setSettleUp(null);
     setFinancialError(null);
     setMutatingKey(null);
+    setCopyStatus('idle');
 
     if (groupId === undefined) {
       setError('Missing group id.');
@@ -357,20 +383,45 @@ export function GroupViewPage() {
   }
 
   return (
-    <section>
-      <h1>{group?.name ?? 'Group'}</h1>
+    <section className="group-view">
+      <header className="group-header card">
+        <h1>{group?.name ?? 'Group'}</h1>
+        {group?.joinCode !== undefined && (
+          <div className="group-join-code">
+            <p className="group-join-code__value">
+              Join code: <code data-testid="join-code">{group.joinCode}</code>
+            </p>
+            <button
+              type="button"
+              className="btn btn--secondary group-join-code__copy"
+              data-testid="copy-join-code"
+              onClick={() => {
+                void copyJoinCode();
+              }}
+            >
+              Copy
+            </button>
+            {copyStatus === 'copied' && (
+              <span className="muted group-join-code__status" role="status">
+                Copied
+              </span>
+            )}
+            {copyStatus === 'failed' && (
+              <span className="muted group-join-code__status" role="status">
+                Copy unavailable — select the code to copy it.
+              </span>
+            )}
+          </div>
+        )}
+      </header>
       {error !== null && <p role="alert">{error}</p>}
-      {group?.joinCode !== undefined && (
-        <p>
-          Join code: <code data-testid="join-code">{group.joinCode}</code>
-        </p>
-      )}
 
-      <nav aria-label="Group sections">
+      <nav className="group-tabs" aria-label="Group sections">
         {GROUP_TABS.map((tab) => (
           <button
             key={tab}
             type="button"
+            className="group-tab"
             aria-pressed={activeTab === tab}
             onClick={() => {
               setActiveTab(tab);
@@ -380,7 +431,9 @@ export function GroupViewPage() {
           </button>
         ))}
       </nav>
-      <h2>{GROUP_TAB_LABELS[activeTab]}</h2>
+
+      <section className="group-section" aria-labelledby="group-section-heading">
+        <h2 id="group-section-heading">{GROUP_TAB_LABELS[activeTab]}</h2>
 
       {activeTab === 'members' ? (
         loading ? (
@@ -396,42 +449,59 @@ export function GroupViewPage() {
           </ul>
         ) : null
       ) : activeTab === 'expenses' ? (
-        <>
-          {groupId !== undefined && (
-            <p>
-              <Link to={SPA_ROUTES.addExpense(groupId)} data-testid="add-expense-link">
+        <div className="group-expenses">
+          <div className="group-expenses__toolbar row">
+            {groupId !== undefined && (
+              <Link
+                to={SPA_ROUTES.addExpense(groupId)}
+                className="btn"
+                data-testid="add-expense-link"
+              >
                 Add expense
               </Link>
-            </p>
-          )}
+            )}
+          </div>
           {deleteError !== null && <p role="alert">{deleteError}</p>}
           {loading ? (
-            <p>Loading expenses…</p>
+            <p className="muted">Loading expenses…</p>
           ) : error === null ? (
             expenses.length === 0 ? (
-              <p data-testid="expenses-empty">No expenses yet.</p>
+              <p className="muted" data-testid="expenses-empty">
+                No expenses yet.
+              </p>
             ) : (
-              <ul data-testid="expense-list">
+              <ul className="list group-expense-list" role="list" data-testid="expense-list">
                 {expenses.map((expense) => (
-                  <li key={expense.id} data-testid="expense-item">
-                    <span data-testid="expense-description">{expense.description}</span>
-                    <span data-testid="expense-amount">
+                  <li className="group-expense" key={expense.id} data-testid="expense-item">
+                    <span className="group-expense__description" data-testid="expense-description">
+                      {expense.description}
+                    </span>
+                    <span className="group-expense__amount" data-testid="expense-amount">
                       {formatKurus(expense.amountKurus as Kurus)}
                     </span>
-                    <span data-testid="expense-payer">Paid by {expense.payer.displayName}</span>
-                    <span data-testid="expense-participants">
+                    <span className="group-expense__payer" data-testid="expense-payer">
+                      Paid by {expense.payer.displayName}
+                    </span>
+                    <span
+                      className="group-expense__participants"
+                      data-testid="expense-participants"
+                    >
                       For {expense.shares.map((share) => share.participant.displayName).join(', ')}
                     </span>
-                    <time dateTime={expense.createdAt}>
+                    <time className="muted group-expense__timestamp" dateTime={expense.createdAt}>
                       {new Date(expense.createdAt).toLocaleString()}
                     </time>
                     {expense.editedAt !== undefined && (
-                      <time data-testid="expense-edited-at" dateTime={expense.editedAt}>
+                      <time
+                        className="muted group-expense__timestamp"
+                        data-testid="expense-edited-at"
+                        dateTime={expense.editedAt}
+                      >
                         edited {new Date(expense.editedAt).toLocaleString()}
                       </time>
                     )}
                     {groupId !== undefined && user !== null && expense.logger.id === user.id && (
-                      <span data-testid="expense-actions">
+                      <span className="row group-expense__actions" data-testid="expense-actions">
                         <Link
                           to={SPA_ROUTES.editExpense(groupId, expense.id)}
                           data-testid="edit-expense-link"
@@ -440,6 +510,7 @@ export function GroupViewPage() {
                         </Link>
                         <button
                           type="button"
+                          className="btn btn--danger group-expense__delete"
                           data-testid="delete-expense"
                           disabled={deletingId === expense.id}
                           onClick={() => {
@@ -455,7 +526,7 @@ export function GroupViewPage() {
               </ul>
             )
           ) : null}
-        </>
+        </div>
       ) : activeTab === 'balances' ? (
         <>
           {financialError !== null && <p role="alert">{financialError}</p>}
@@ -558,9 +629,10 @@ export function GroupViewPage() {
           )}
         </>
       )}
+      </section>
 
       {isCreator && (
-        <section id="join-requests" aria-labelledby="join-requests-heading">
+        <section id="join-requests" className="group-join-requests" aria-labelledby="join-requests-heading">
           <h2 id="join-requests-heading">Join requests</h2>
           {requestsError !== null && <p role="alert">{requestsError}</p>}
           {requestsLoading ? (
