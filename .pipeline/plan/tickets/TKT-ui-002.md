@@ -1,6 +1,7 @@
 # TKT-ui-002: Auth pages — login, register, change password
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/40
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/LoginPage.tsx`, `apps/web/src/pages/RegisterPage.tsx`, `apps/web/src/pages/ChangePasswordPage.tsx` (+ colocated `*.css` per page, created here)

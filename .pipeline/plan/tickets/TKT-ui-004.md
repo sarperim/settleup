@@ -1,6 +1,7 @@
 # TKT-ui-004: Group view — page shell & Expenses section
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/44
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/GroupViewPage.tsx` (+ colocated CSS)

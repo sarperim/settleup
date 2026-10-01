@@ -1,6 +1,7 @@
 # TKT-ui-007: Add-expense form — the 30-second journey
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/41
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/AddExpensePage.tsx` (+ colocated CSS)
