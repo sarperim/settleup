@@ -368,6 +368,17 @@ The architect amendment also specifies the previously open combination *member n
 - Steps: load the groups overview (`/`), the group view (`/groups/:groupId`), and the creator's join-request handling view; measure each per the T4 policy (median of 3, one retry on breach)
 - Expected result: each page's median load time ≤ **2.0 s**
 
+### TC-GRP-032 — Join-by-code entry from the groups overview (code-entry path)
+- Traces to: UC-GRP-002 (step 1 — "opening the link **or entering the code**"), FR-GRP-003, FR-GRP-004; PG-005 code entry → PG-009
+- Level: e2e
+- Preconditions: fresh e2e database; self-contained — in-test setup: register `rex@test.local` ("Rex") via UI, create group "Trip" via UI, capture its join code from the creator view; sign out; register `sara@test.local` ("Sara") via UI (signed in, a non-member of "Trip")
+- Steps:
+  1. From sara's groups overview (`/`), enter Trip's code in the join-by-code entry and submit
+  2. Return to the overview, enter a well-formed code that matches no group (`ZZZZ9999`) in the same entry, and submit
+- Expected result:
+  1. the SPA navigates to `/join/<code>` and the join page shows the group's name "Trip" before confirming (PG-009 resolution — UC-GRP-002 steps 1–2 via the code-entry path, not a shared link)
+  2. the SPA navigates to `/join/ZZZZ9999` and the join page shows its code-not-found state — an unknown code is indistinguishable from a missing group (FR-GRP-004), not an overview-level error
+
 ## 3. Test Design — Systematic Case Selection
 
 ### Equivalence partitioning
@@ -457,7 +468,7 @@ States: `created → exists` (forever — BR-GRP-007).
 |---|---|---|---|
 | FR-GRP-001 | UC-GRP-001 main | TC-003, 026 | Covered |
 | FR-GRP-002 | UC-GRP-001 step 3; creator-only visibility; per-group uniqueness | TC-003, 006 (+ generator TC-001/002) | Covered |
-| FR-GRP-003 | UC-GRP-002 main | TC-009, 027 | Covered |
+| FR-GRP-003 | UC-GRP-002 main | TC-009, 027, 032 (code-entry path) | Covered |
 | FR-GRP-004 | UC-GRP-002 E1 (both resolve and request paths) | TC-008, 010 | Covered |
 | FR-GRP-005 | UC-GRP-003/004 step 1; creator-only | TC-009 (step 2), 013/014 (step 4), 017, 020 | Covered |
 | FR-GRP-006 | UC-GRP-003 main | TC-013, 028 | Covered |
@@ -469,7 +480,7 @@ States: `created → exists` (forever — BR-GRP-007).
 | FR-GRP-012 | UC-GRP-002 A2; structural single-row guarantee | TC-012, 015 (step 2–3) | Covered |
 | FR-GRP-013 | UC-GRP-002 A1 (creator-self and approved member) | TC-011 | Covered |
 | UC-GRP-001 | main, E1 | TC-003/004 (API), TC-026 (UI) | Covered |
-| UC-GRP-002 | main, A1, A2, E1 | TC-009/011/012/010 (API), TC-027 (UI) | Covered |
+| UC-GRP-002 | main, A1, A2, E1 | TC-009/011/012/010 (API), TC-027 (UI link path), TC-032 (UI code-entry path) | Covered |
 | UC-GRP-003 | main | TC-013 (API), TC-028 (UI) | Covered |
 | UC-GRP-004 | main (postcondition: re-request; outcome out-of-band — nothing to assert) | TC-014 (API), TC-029 (UI) | Covered |
 | UC-GRP-005 | main | TC-016 (API), TC-030 (UI) | Covered |

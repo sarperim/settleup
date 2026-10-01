@@ -1,0 +1,37 @@
+/**
+ * `/` groups overview styles (TKT-ui-003) — colocated with the page component.
+ *
+ * Follows the TKT-ui-001 convention: page-specific CSS lives beside its page
+ * and consumes the design tokens from `styles/tokens.css` as custom
+ * properties — no hard-coded colour or font values. It only lays out the
+ * groups list and the two entry panels (create / join by code); the shared
+ * `.card`, `.stack`, `.row` classes come from `styles/base.css`.
+ */
+
+.groups-overview {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.groups-overview__actions {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  align-items: start;
+}
+
+.groups-overview__panel {
+  padding: var(--space-5);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.groups-overview__panel form {
+  margin-block: 0;
+}
+
+.groups-overview__panel h2 {
+  margin-bottom: var(--space-4);
+}

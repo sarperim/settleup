@@ -152,6 +152,33 @@ test('TC-GRP-030 — member list UI shows display names, never email addresses',
   await oliveContext.close();
 });
 
+test('TC-GRP-032 — enter a join code from the groups overview', async ({ page }) => {
+  const rex = e2eIdentity('rex', 'Rex', 'password-1');
+  const sandy = e2eIdentity('sandy', 'Sandy', 'password-1');
+  const { code } = await createGroupViaUi(page, rex, 'Trip');
+
+  // Signed-in overview as a non-member (sandy) — the join code is the only
+  // thing sandy holds (PG-005 code entry).
+  await logout(page);
+  await register(page, sandy);
+  await expect(page).toHaveURL('/');
+
+  // Step 1: entering a valid code lands on the join page with the group's
+  // name shown before confirming (UC-GRP-002 step 1 via the code-entry path).
+  await page.getByLabel('Join code').fill(code);
+  await page.getByRole('button', { name: 'Join', exact: true }).click();
+  await expect(page).toHaveURL(`/join/${code}`);
+  await expect(page.getByTestId('join-group-name')).toHaveText('Trip');
+
+  // Step 2: an unknown well-formed code reaches the join page's code-not-found
+  // state (FR-GRP-004) rather than failing in the overview.
+  await page.goto('/');
+  await page.getByLabel('Join code').fill('ZZZZ9999');
+  await page.getByRole('button', { name: 'Join', exact: true }).click();
+  await expect(page).toHaveURL('/join/ZZZZ9999');
+  await expect(page.getByRole('alert')).toHaveText('This join code does not match any group.');
+});
+
 test('TC-GRP-031 — group pages meet the page-load budget', async ({ page }) => {
   const peter = e2eIdentity('peter', 'Peter', 'password-1');
   const quinn = e2eIdentity('quinn', 'Quinn', 'password-1');
