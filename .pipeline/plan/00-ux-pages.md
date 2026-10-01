@@ -23,6 +23,18 @@ Recorded at Gate 1 approval — the visual contract input for the UI/UX iteratio
 
 This section records **direction, not specifics**. Exact tokens (hex values, typefaces, spacing scale) are pinned once by the design-system foundation ticket (TKT-ui-001) and flow back here as an amendment recording the final choices. Constraints that shape any implementation of this direction (from the architecture, not taste): fonts must be **self-hosted / same-origin** (helmet CSP, arch 01 §8.2 — no remote font CDNs), and the SPA initial bundle stays **≤ 300 KB gzipped** (NFR-ACC-003 / SC-004) — no heavyweight UI frameworks.
 
+#### Pinned specifics — TKT-ui-001, 2026-10-01
+
+Amended on landing the design-system foundation. The approved direction above is now implemented as concrete choices, recorded here so every page ticket builds on one palette and type scale:
+
+- **Base surfaces:** light beige — page `#f7f2e9`, raised/card `#fffdf8`, sunken `#efe7d8`, borders `#e3d8c6` / `#cdbca2`.
+- **Text:** warm browns — `#3d3630` body, `#7c6f60` muted.
+- **Accent (pastel red) family:** `#e59a9d` base, `#d97c80` strong/hover, `#f8e2e3` soft. **Nav bar** uses `#edb6b6` with `#45292b` text and `#d97c80` for the active item.
+- **Status:** danger `#c25b55`, success `#5f8f6f`, focus `#b5565a`.
+- **Typography (warm pairing):** **Fraunces** (variable display serif) for headings, **Nunito** (variable humanist sans) for body, packaged self-hosted via `@fontsource-variable/*` (CSS + woff2 only; no runtime JS, no remote CDN).
+- **Styling convention for all later page tickets:** design tokens live in `apps/web/src/styles/tokens.css` (the single source of colour/font values); global element defaults and shared classes (`.card`, `.alert`, `.list`, `.btn` + modifiers, `.muted`, `.stack`, `.row`) live in `apps/web/src/styles/base.css`; the app-shell styles live in `apps/web/src/layout/RootLayout.css`; **page-specific CSS is colocated with its page component** and must consume the tokens via `var(--…)` — no hard-coded colour or font values outside `tokens.css`.
+- **Verified budget:** production SPA initial bundle **91.5 KB gzipped** (≤ 300 KB, NFR-ACC-003).
+
 ## Pages
 
 ### PG-001 — App shell (layout region, not a route)

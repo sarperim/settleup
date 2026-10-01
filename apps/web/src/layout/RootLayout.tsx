@@ -10,6 +10,7 @@
 
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
+import './RootLayout.css';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { SPA_ROUTES } from '../routes';
@@ -33,7 +34,7 @@ export function RootLayout() {
       <header className="app-header">
         <span className="app-brand">Settle Up</span>
         {status === 'authenticated' && user !== null ? (
-          <nav aria-label="Main navigation">
+          <nav className="app-nav" aria-label="Main navigation">
             <NavLink to={SPA_ROUTES.groupsOverview}>Groups</NavLink>
             <NavLink to={SPA_ROUTES.changePassword}>Change password</NavLink>
             <span className="app-user" data-testid="current-user">
@@ -49,7 +50,7 @@ export function RootLayout() {
             </button>
           </nav>
         ) : (
-          <nav aria-label="Main navigation">
+          <nav className="app-nav" aria-label="Main navigation">
             <NavLink to={SPA_ROUTES.login}>Log in</NavLink>
             <NavLink to={SPA_ROUTES.register}>Create account</NavLink>
           </nav>

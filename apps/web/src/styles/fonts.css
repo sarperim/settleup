@@ -1,0 +1,22 @@
+/**
+ * Self-hosted font pairing (TKT-ui-001).
+ *
+ * The warm display/body pairing chosen for the light-beige + pastel-red
+ * direction: **Fraunces** (a soft, warm display serif) for headings and
+ * **Nunito** (a rounded humanist sans) for body text. Both are variable
+ * fonts, imported through the `@fontsource-variable` packages as CSS + woff2
+ * assets only — no runtime JavaScript.
+ *
+ * Vite resolves these bare `@import`s, emits the woff2 files under
+ * `dist/assets/`, and rewrites the `url()`s so the fonts are served from the
+ * documented origin (helmet CSP `font-src 'self'`, `01-system-architecture.md`
+ * §8.2). No remote font CDN is referenced anywhere. Each `@font-face`
+ * declares `font-display: swap` and unicode-range subsets, so the browser
+ * fetches only the latin subset actually used.
+ *
+ * The chosen family names are exposed to the rest of the app as
+ * `--font-display` / `--font-body` in `tokens.css`.
+ */
+
+@import '@fontsource-variable/fraunces/wght.css';
+@import '@fontsource-variable/nunito/wght.css';
