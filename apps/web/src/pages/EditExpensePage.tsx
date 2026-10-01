@@ -13,11 +13,20 @@
  * sees the entry point to this page (BR-EXP-007's UI aspect). The API itself
  * returns `403 NOT_LOGGER` to any other member, so a hand-typed URL fails
  * closed. Member references are display names only (FR-ACC-008).
+ *
+ * Styling (TKT-ui-008) matches the add-expense sibling via the shared
+ * `tokens.css` custom properties and `base.css` classes: the same
+ * single-screen card layout, segmented split-type control and participant
+ * chips, with a dedicated `EditExpensePage.css`. Save submits; abandon
+ * returns to the group ledger (PG-008). This is presentation only — the
+ * submit payload, validation and route behaviour are unchanged.
  */
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FIELD_LIMITS, type EditExpenseRequestDto, type MemberDto, type SplitType } from 'shared';
+
+import './EditExpensePage.css';
 
 import { expensesApi } from '../api/expenses';
 import { groupsApi } from '../api/groups';
@@ -213,16 +222,16 @@ export function EditExpensePage() {
   }
 
   return (
-    <section>
-      <h1>Edit expense</h1>
+    <section className="edit-expense">
+      <h1 className="edit-expense__title">Edit expense</h1>
       {loadError !== null && <p role="alert">{loadError}</p>}
       {loading ? (
         <p>Loading expense…</p>
       ) : loadError === null ? (
-        <form onSubmit={onSubmit} noValidate aria-label="Edit an expense">
+        <form onSubmit={onSubmit} noValidate aria-label="Edit an expense" className="edit-expense__form">
           {submitError !== null && <p role="alert">{submitError}</p>}
 
-          <p>
+          <div className="edit-expense__field">
             <label htmlFor="expense-description">Description</label>
             <input
               id="expense-description"
@@ -234,138 +243,155 @@ export function EditExpensePage() {
                 setDescription(event.target.value);
               }}
             />
-          </p>
-          {errors.description !== undefined && (
-            <p data-testid="description-error" role="alert">
-              {errors.description}
-            </p>
-          )}
+            {errors.description !== undefined && (
+              <p className="edit-expense__error" data-testid="description-error" role="alert">
+                {errors.description}
+              </p>
+            )}
+          </div>
 
-          <p>
-            <label htmlFor="expense-amount">Amount</label>
-            <input
-              id="expense-amount"
-              name="amount"
-              type="text"
-              inputMode="decimal"
-              value={amountText}
-              onChange={(event) => {
-                setAmountText(event.target.value);
-              }}
-            />
-          </p>
-          {errors.amount !== undefined && (
-            <p data-testid="amount-error" role="alert">
-              {errors.amount}
-            </p>
-          )}
+          <div className="edit-expense__row">
+            <div className="edit-expense__field">
+              <label htmlFor="expense-amount">Amount</label>
+              <input
+                id="expense-amount"
+                name="amount"
+                type="text"
+                inputMode="decimal"
+                value={amountText}
+                onChange={(event) => {
+                  setAmountText(event.target.value);
+                }}
+              />
+              {errors.amount !== undefined && (
+                <p className="edit-expense__error" data-testid="amount-error" role="alert">
+                  {errors.amount}
+                </p>
+              )}
+            </div>
 
-          <p>
-            <label htmlFor="expense-payer">Payer</label>
-            <select
-              id="expense-payer"
-              name="payer"
-              value={payerId}
-              onChange={(event) => {
-                setPayerId(event.target.value);
-              }}
-            >
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.displayName}
-                </option>
-              ))}
-            </select>
-          </p>
-          {errors.payer !== undefined && (
-            <p data-testid="payer-error" role="alert">
-              {errors.payer}
-            </p>
-          )}
+            <div className="edit-expense__field">
+              <label htmlFor="expense-payer">Payer</label>
+              <select
+                id="expense-payer"
+                name="payer"
+                value={payerId}
+                onChange={(event) => {
+                  setPayerId(event.target.value);
+                }}
+              >
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.displayName}
+                  </option>
+                ))}
+              </select>
+              {errors.payer !== undefined && (
+                <p className="edit-expense__error" data-testid="payer-error" role="alert">
+                  {errors.payer}
+                </p>
+              )}
+            </div>
+          </div>
 
-          <fieldset>
+          <fieldset className="edit-expense__group">
             <legend>Split type</legend>
-            <label>
-              <input
-                type="radio"
-                name="splitType"
-                value="EQUAL"
-                checked={splitType === 'EQUAL'}
-                onChange={() => {
-                  setSplitType('EQUAL');
-                }}
-              />
-              Equal
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="splitType"
-                value="EXACT"
-                checked={splitType === 'EXACT'}
-                onChange={() => {
-                  setSplitType('EXACT');
-                }}
-              />
-              Exact
-            </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>Participants</legend>
-            {members.map((member) => (
-              <label key={member.id}>
+            <div className="edit-expense__segmented">
+              <label>
                 <input
-                  type="checkbox"
-                  data-testid="participant-checkbox"
-                  checked={participantIds.includes(member.id)}
-                  onChange={(event) => {
-                    toggleParticipant(member.id, event.target.checked);
+                  type="radio"
+                  name="splitType"
+                  value="EQUAL"
+                  checked={splitType === 'EQUAL'}
+                  onChange={() => {
+                    setSplitType('EQUAL');
                   }}
                 />
-                {member.displayName}
+                Equal
               </label>
-            ))}
+              <label>
+                <input
+                  type="radio"
+                  name="splitType"
+                  value="EXACT"
+                  checked={splitType === 'EXACT'}
+                  onChange={() => {
+                    setSplitType('EXACT');
+                  }}
+                />
+                Exact
+              </label>
+            </div>
           </fieldset>
-          {errors.participants !== undefined && (
-            <p data-testid="participants-error" role="alert">
-              {errors.participants}
-            </p>
-          )}
+
+          <fieldset className="edit-expense__group">
+            <legend>Participants</legend>
+            <div className="edit-expense__choices">
+              {members.map((member) => (
+                <label key={member.id}>
+                  <input
+                    type="checkbox"
+                    data-testid="participant-checkbox"
+                    checked={participantIds.includes(member.id)}
+                    onChange={(event) => {
+                      toggleParticipant(member.id, event.target.checked);
+                    }}
+                  />
+                  {member.displayName}
+                </label>
+              ))}
+            </div>
+            {errors.participants !== undefined && (
+              <p className="edit-expense__error" data-testid="participants-error" role="alert">
+                {errors.participants}
+              </p>
+            )}
+          </fieldset>
 
           {splitType === 'EXACT' && (
-            <fieldset>
+            <fieldset className="edit-expense__group">
               <legend>Exact amounts</legend>
-              {members
-                .filter((member) => participantIds.includes(member.id))
-                .map((member) => (
-                  <label key={member.id}>
-                    {member.displayName}
-                    <input
-                      data-testid={`exact-${member.id}`}
-                      type="text"
-                      inputMode="decimal"
-                      value={exactTexts[member.id] ?? ''}
-                      onChange={(event) => {
-                        setExactTexts((current) => ({
-                          ...current,
-                          [member.id]: event.target.value,
-                        }));
-                      }}
-                    />
-                  </label>
-                ))}
+              <div className="edit-expense__exact">
+                {members
+                  .filter((member) => participantIds.includes(member.id))
+                  .map((member) => (
+                    <div className="edit-expense__exact-row" key={member.id}>
+                      <label htmlFor={`exact-${member.id}`}>{member.displayName}</label>
+                      <input
+                        id={`exact-${member.id}`}
+                        data-testid={`exact-${member.id}`}
+                        type="text"
+                        inputMode="decimal"
+                        value={exactTexts[member.id] ?? ''}
+                        onChange={(event) => {
+                          setExactTexts((current) => ({
+                            ...current,
+                            [member.id]: event.target.value,
+                          }));
+                        }}
+                      />
+                    </div>
+                  ))}
+              </div>
               {errors.exact !== undefined && (
-                <p data-testid="exact-error" role="alert">
+                <p className="edit-expense__error" data-testid="exact-error" role="alert">
                   {errors.exact}
                 </p>
               )}
             </fieldset>
           )}
 
-          <button type="submit" disabled={submitting}>
-            Save changes
-          </button>
+          <div className="edit-expense__actions">
+            <button type="submit" className="edit-expense__submit" disabled={submitting}>
+              Save changes
+            </button>
+            <Link
+              className="btn btn--secondary edit-expense__cancel"
+              to={SPA_ROUTES.groupView(groupId ?? '')}
+            >
+              Cancel
+            </Link>
+          </div>
         </form>
       ) : null}
     </section>
