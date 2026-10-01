@@ -1,6 +1,6 @@
 # TKT-ui-005: Group view — Balances & Settle-up sections
 
-- Status: in-review
+- Status: done (merged via PR #45 → dev, 2026-10-01; review loop clean pass 1 — artifact `reviews/TKT-ui-005-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/45
 - Size: M
 - Scope:
