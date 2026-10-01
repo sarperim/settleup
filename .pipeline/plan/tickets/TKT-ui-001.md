@@ -1,6 +1,6 @@
 # TKT-ui-001: Design system, global styles & app shell
 
-- Status: in-review
+- Status: done (merged via PR #38 → dev, 2026-10-01, merge commit e622a06; review loop closed clean at pass 2 after one fix round — blast radius FULL, compliance compliant / security approve / code approve on d751ec8, CI green; round artifacts `reviews/TKT-ui-001-round-{1,2}.md`, open non-blocking nits N1 `.btn--danger` hover flip / N2 `.list` container-only mirror / N3 `role="list"` a11y debt to carry into the first page ticket) — UI/UX iteration 2 foundation; page tickets PG-002…PG-009 still require a planner re-plan
 - PR: https://github.com/sarperim/settleup/pull/38
 - Size: M
 - Scope:
@@ -14,6 +14,7 @@
   3. All existing suites pass unmodified under the established root scripts (`pnpm test`, `pnpm test:e2e`) — no testid, role, label, or text-assertion changes anywhere in this ticket
   4. Production build initial bundle ≤ 300 KB gzipped (NFR-ACC-003 / SC-004), fonts served same-origin (helmet CSP, arch 01 §8.2); no remote font CDN; no new runtime JavaScript dependencies
   5. Styling convention pinned for later page tickets: global tokens + shared classes live in `styles/`; page-specific CSS is colocated with its page component
+  6. The PR amends `00-ux-pages.md` § Design direction with the pinned token choices (typefaces, palette) — the flow-back the plan requires
 - Architecture refs: 01-system-architecture.md §2 C1 (SPA responsibilities), §7 NFR-ACC-003 row (bundle ≤ 300 KB gzipped), §8.2 (helmet CSP, self-origin only)
 - UX refs: PG-001; `00-ux-pages.md` § Design direction (2026-10-01)
 - Dependencies: none (iteration-1 board complete — 34/34 tickets done)
