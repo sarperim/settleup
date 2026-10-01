@@ -1,0 +1,148 @@
+/**
+ * Add-expense page styles (TKT-ui-007) — colocated with `AddExpensePage.tsx`.
+ *
+ * PG-007 is the SC-003 / NFR-EXP-001 critical path: a **single screen** where
+ * the common case is description + amount + submit. This stylesheet only
+ * dresses that screen with the TKT-ui-001 design direction (via `tokens.css`
+ * custom properties) — it adds no wizard steps, no focus management and no
+ * round-trips, so the timed journey (TC-EXP-028) is untouched. All
+ * colour/type values resolve through tokens; no hard-coded values here.
+ */
+
+.add-expense {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--layout-max-width);
+  margin-inline: auto;
+}
+
+.add-expense__title {
+  margin-bottom: 0;
+}
+
+/* The single-screen form sits on a raised card; base.css's 32rem cap is
+ * widened so amount + payer can sit side by side without wrapping. */
+.add-expense__form {
+  width: 100%;
+  max-width: 40rem;
+  margin-block: 0;
+  padding: var(--space-5);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.add-expense__field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.add-expense__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 34rem) {
+  .add-expense__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inline validation errors — smaller than the shared `[role="alert"]` block
+ * so they hug their field and never push the submit control off-screen. */
+.add-expense__error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.add-expense__group {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  background-color: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.add-expense__group legend {
+  padding-inline: var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Split type — a pill segmented control; the native radios stay present and
+ * keyboard-operable, so no focus trap is introduced. */
+.add-expense__segmented {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.add-expense__segmented label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.add-expense__segmented label:has(input:checked) {
+  color: var(--color-accent-contrast);
+  background-color: var(--color-accent-soft);
+}
+
+/* Participant selection — chips that wrap; all preselected by default. */
+.add-expense__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.add-expense__choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.add-expense__choices label:has(input:checked) {
+  background-color: var(--color-accent-soft);
+  border-color: var(--color-accent-strong);
+}
+
+.add-expense__exact {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.add-expense__exact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.add-expense__exact-row label {
+  margin: 0;
+}
+
+.add-expense__submit {
+  justify-self: start;
+  min-width: 10rem;
+}
