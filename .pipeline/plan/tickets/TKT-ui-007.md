@@ -1,6 +1,6 @@
 # TKT-ui-007: Add-expense form — the 30-second journey
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/AddExpensePage.tsx` (+ colocated CSS)
