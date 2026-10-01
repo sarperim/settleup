@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { JoinInfoDto } from 'shared';
 
+import './JoinPage.css';
 import { groupsApi } from '../api/groups';
 import { ApiError } from '../api/errors';
 
@@ -92,50 +93,69 @@ export function JoinPage() {
 
   if (phase === 'loading') {
     return (
-      <section>
-        <h1>Join group</h1>
-        <p role="status">Resolving join code…</p>
+      <section className="join-page card">
+        <h1 className="join-page__title">Join group</h1>
+        <p role="status" className="join-page__state">
+          Resolving join code…
+        </p>
       </section>
     );
   }
 
   if (phase === 'code-not-found') {
     return (
-      <section>
-        <h1>Join group</h1>
-        <p role="alert">This join code does not match any group.</p>
+      <section className="join-page card">
+        <h1 className="join-page__title">Join group</h1>
+        <p role="alert" className="join-page__state">
+          This join code does not match any group.
+        </p>
       </section>
     );
   }
 
   if (phase === 'error' || info === null) {
     return (
-      <section>
-        <h1>Join group</h1>
-        <p role="alert">{error ?? 'Could not resolve this join code.'}</p>
+      <section className="join-page card">
+        <h1 className="join-page__title">Join group</h1>
+        <p role="alert" className="join-page__state">
+          {error ?? 'Could not resolve this join code.'}
+        </p>
       </section>
     );
   }
 
   return (
-    <section>
-      <h1>Join group</h1>
-      <p>
-        You are joining <strong data-testid="join-group-name">{info.groupName}</strong>.
+    <section className="join-page card">
+      <h1 className="join-page__title">Join group</h1>
+      <p className="join-page__lede">
+        You are joining{' '}
+        <strong className="join-page__name" data-testid="join-group-name">{info.groupName}</strong>
       </p>
 
-      {error !== null && <p role="alert">{error}</p>}
+      {error !== null && (
+        <p role="alert" className="join-page__state">
+          {error}
+        </p>
+      )}
 
       {alreadyMember ? (
-        <p data-testid="join-already-member">You are already a member of this group.</p>
+        <p data-testid="join-already-member" className="join-page__state muted">
+          You are already a member of this group.
+        </p>
       ) : submitted ? (
-        <p data-testid="join-request-pending" role="status">
+        <p
+          data-testid="join-request-pending"
+          role="status"
+          className="alert alert--success join-page__state"
+        >
           Your request to join {info.groupName} is pending the creator&apos;s approval.
         </p>
       ) : (
-        <button type="button" onClick={() => void onConfirm()} disabled={submitting}>
-          Request to join
-        </button>
+        <div className="join-page__actions">
+          <button type="button" onClick={() => void onConfirm()} disabled={submitting}>
+            Request to join
+          </button>
+        </div>
       )}
     </section>
   );
