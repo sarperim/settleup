@@ -1,6 +1,6 @@
 # TKT-ui-008: Edit-expense form
 
-- Status: in-review
+- Status: done (merged via PR #42 → dev, 2026-10-01; review loop clean pass 1 — artifact `reviews/TKT-ui-008-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/42
 - Size: M
 - Scope:

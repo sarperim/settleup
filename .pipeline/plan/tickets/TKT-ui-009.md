@@ -1,6 +1,6 @@
 # TKT-ui-009: Join-by-code confirmation page
 
-- Status: in-review
+- Status: done (merged via PR #39 → dev, 2026-10-01; review loop clean pass 2 after one fixer round — artifacts `reviews/TKT-ui-009-round-{1,2}.md`)
 - PR: https://github.com/sarperim/settleup/pull/39
 - Size: S
 - Scope:

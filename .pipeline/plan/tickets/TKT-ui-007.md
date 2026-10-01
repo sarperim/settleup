@@ -1,6 +1,6 @@
 # TKT-ui-007: Add-expense form — the 30-second journey
 
-- Status: in-review
+- Status: done (merged via PR #41 → dev, 2026-10-01; review loop clean pass 1 — artifact `reviews/TKT-ui-007-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/41
 - Size: M
 - Scope:

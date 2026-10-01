@@ -1,6 +1,6 @@
 # TKT-ui-004: Group view — page shell & Expenses section
 
-- Status: in-review
+- Status: done (merged via PR #44 → dev, 2026-10-01; review loop clean pass 1 — artifact `reviews/TKT-ui-004-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/44
 - Size: M
 - Scope:

@@ -1,6 +1,6 @@
 # TKT-ui-002: Auth pages — login, register, change password
 
-- Status: in-review
+- Status: done (merged via PR #40 → dev, 2026-10-01; review loop clean pass 1 — artifacts `reviews/TKT-ui-002-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/40
 - Size: M
 - Scope:
