@@ -1,0 +1,162 @@
+/**
+ * Edit-expense page styles (TKT-ui-008) — colocated with `EditExpensePage.tsx`.
+ *
+ * PG-008 is the PG-007 form prefilled with the stored expense: the same
+ * **single screen**, description/amount/payer fields, segmented split type,
+ * participant chips and exact-amount rows — so this stylesheet mirrors the
+ * add-expense sibling class for class, consuming the TKT-ui-001 design
+ * direction through `tokens.css` custom properties only (no hard-coded
+ * colour or type values). It is presentation only: no wizard steps, no focus
+ * management, no extra round-trips, so the page-load budget (TC-EXP-032) is
+ * untouched. Save and abandon (Cancel) sit in one action row.
+ */
+
+.edit-expense {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--layout-max-width);
+  margin-inline: auto;
+}
+
+.edit-expense__title {
+  margin-bottom: 0;
+}
+
+/* The single-screen form sits on a raised card, matching the add-expense form;
+ * base.css's 32rem cap is widened so amount + payer can sit side by side. */
+.edit-expense__form {
+  width: 100%;
+  max-width: 40rem;
+  margin-block: 0;
+  padding: var(--space-5);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.edit-expense__field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.edit-expense__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 34rem) {
+  .edit-expense__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Inline validation errors — smaller than the shared `[role="alert"]` block
+ * so they hug their field and never push the action row off-screen. */
+.edit-expense__error {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.edit-expense__group {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4);
+  background-color: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.edit-expense__group legend {
+  padding-inline: var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* Split type — a pill segmented control; the native radios stay present and
+ * keyboard-operable, so no focus trap is introduced. */
+.edit-expense__segmented {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+}
+
+.edit-expense__segmented label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1) var(--space-4);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.edit-expense__segmented label:has(input:checked) {
+  color: var(--color-accent-contrast);
+  background-color: var(--color-accent-soft);
+}
+
+/* Participant selection — chips that wrap, prefilled from the stored split. */
+.edit-expense__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.edit-expense__choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.edit-expense__choices label:has(input:checked) {
+  background-color: var(--color-accent-soft);
+  border-color: var(--color-accent-strong);
+}
+
+.edit-expense__exact {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.edit-expense__exact-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.edit-expense__exact-row label {
+  margin: 0;
+}
+
+/* Save (submit) and abandon (Cancel) in one row, so the primary control keeps
+ * the add-expense form's placement and the abandon action reads as secondary. */
+.edit-expense__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.edit-expense__submit {
+  min-width: 10rem;
+}
+
+.edit-expense__cancel {
+  text-decoration: none;
+}

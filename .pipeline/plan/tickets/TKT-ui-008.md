@@ -1,6 +1,6 @@
 # TKT-ui-008: Edit-expense form
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/EditExpensePage.tsx` (+ colocated CSS)
