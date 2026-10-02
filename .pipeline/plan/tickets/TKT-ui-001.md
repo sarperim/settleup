@@ -1,6 +1,6 @@
 # TKT-ui-001: Design system, global styles & app shell
 
-- Status: done (merged via PR #38 → dev, 2026-10-01, merge commit e622a06; review loop closed clean at pass 2 after one fix round — blast radius FULL, compliance compliant / security approve / code approve on d751ec8, CI green; round artifacts `reviews/TKT-ui-001-round-{1,2}.md`, open non-blocking nits N1 `.btn--danger` hover flip / N2 `.list` container-only mirror / N3 `role="list"` a11y debt to carry into the first page ticket) — UI/UX iteration 2 foundation; page tickets PG-002…PG-009 still require a planner re-plan
+- Status: done (merged via PR #38 → dev, 2026-10-01, merge commit e622a06; review loop closed clean at pass 2 after one fix round — blast radius FULL, compliance compliant / security approve / code approve on d751ec8, CI green; round artifacts `reviews/TKT-ui-001-round-{1,2}.md`, open non-blocking nits N1 `.btn--danger` hover flip / N2 `.list` container-only mirror / N3 `role="list"` a11y debt, carried into the page tickets) — UI/UX iteration 2 foundation
 - PR: https://github.com/sarperim/settleup/pull/38
 - Size: M
 - Scope:
