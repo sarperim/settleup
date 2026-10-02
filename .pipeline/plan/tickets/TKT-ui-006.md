@@ -1,6 +1,6 @@
 # TKT-ui-006: Group view — Members section & join-requests region
 
-- Status: todo
+- Status: in-progress
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/GroupViewPage.tsx` (+ colocated CSS) — the members tab section and the creator-only join-requests region
