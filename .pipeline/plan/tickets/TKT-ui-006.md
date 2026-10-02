@@ -1,6 +1,7 @@
 # TKT-ui-006: Group view — Members section & join-requests region
 
-- Status: in-progress
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/46
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/GroupViewPage.tsx` (+ colocated CSS) — the members tab section and the creator-only join-requests region
