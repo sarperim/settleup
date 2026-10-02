@@ -1,6 +1,6 @@
 # TKT-ui-006: Group view — Members section & join-requests region
 
-- Status: in-review
+- Status: done (merged via PR #46 → dev, 2026-10-01; review loop clean pass 1 — artifact `reviews/TKT-ui-006-round-1.md`)
 - PR: https://github.com/sarperim/settleup/pull/46
 - Size: M
 - Scope:
