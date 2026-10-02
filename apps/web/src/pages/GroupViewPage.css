@@ -1,6 +1,6 @@
 /**
- * Group view page styles (TKT-ui-004; extended by TKT-ui-005) — colocated with
- * `GroupViewPage.tsx`.
+ * Group view page styles (TKT-ui-004; extended by TKT-ui-005, TKT-ui-006) —
+ * colocated with `GroupViewPage.tsx`.
  *
  * TKT-ui-004 owns the page shell + Expenses section of PG-006: the header region
  * (group name and the creator-only join code with its copy affordance), the
@@ -68,8 +68,7 @@
 }
 
 .group-expenses,
-.group-expense-list,
-.group-join-requests {
+.group-expense-list {
   display: grid;
   gap: var(--space-3);
 }
@@ -231,4 +230,79 @@
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
+}
+
+/* ── Members section (TKT-ui-006) ────────────────────────────────────────── */
+
+.group-members {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.group-member-list {
+  margin-bottom: 0;
+}
+
+/* One member per row: display name on the left, creator marker on the right. */
+.group-member {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.group-member__name {
+  font-weight: var(--font-weight-medium);
+}
+
+/* The creator marker — the member the group's gatekeeping belongs to. */
+.group-member__badge {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-accent-contrast);
+  background-color: var(--color-accent-soft);
+  border: 1px solid var(--color-accent-strong);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+}
+
+/* ── Join-requests region (TKT-ui-006) ───────────────────────────────────── */
+
+/* Creator-only gatekeeping, set apart from the tabbed sections as a panel. */
+.group-join-requests {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.group-join-requests h2 {
+  margin-bottom: 0;
+}
+
+.group-join-request-list {
+  margin-bottom: 0;
+}
+
+/* One request per row: requester's display name left, decisions right. */
+.group-join-request {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.group-join-request__name {
+  font-weight: var(--font-weight-medium);
+}
+
+.group-join-request__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.group-join-request__actions .btn {
+  flex: none;
 }

@@ -24,6 +24,12 @@
  * only): signed balance rows plus an emphasised zero-sum total, and outstanding
  * / settled panels whose party-only actions and undone label carry class hooks —
  * presentation only, so every testid/role/label/text stays as the TCs assert.
+ * TKT-ui-006 closes the page by dressing the **Members** section and the
+ * creator-only **Join requests** region in the same design direction (colocated
+ * `GroupViewPage.css`, `var(--…)` tokens only): member rows pairing the display
+ * name with a creator badge, and a join-requests panel whose request rows place
+ * the requester's display name beside the approve/reject actions — again
+ * presentation only, so every testid/role/label/text stays as the TCs assert.
  * The group's name
  * and — for the creator only — its join code come from
  * `GET /api/groups/:groupId` (FR-GRP-002).
@@ -454,18 +460,24 @@ export function GroupViewPage() {
         <h2 id="group-section-heading">{GROUP_TAB_LABELS[activeTab]}</h2>
 
       {activeTab === 'members' ? (
-        loading ? (
-          <p>Loading members…</p>
-        ) : error === null ? (
-          <ul data-testid="member-list">
-            {members.map((member) => (
-              <li key={member.id} data-testid="member-item">
-                <span>{member.displayName}</span>
-                {member.isCreator && <span data-testid="member-creator-badge">Creator</span>}
-              </li>
-            ))}
-          </ul>
-        ) : null
+        <div className="group-members">
+          {loading ? (
+            <p className="muted">Loading members…</p>
+          ) : error === null ? (
+            <ul className="list group-member-list" role="list" data-testid="member-list">
+              {members.map((member) => (
+                <li className="group-member" key={member.id} data-testid="member-item">
+                  <span className="group-member__name">{member.displayName}</span>
+                  {member.isCreator && (
+                    <span className="group-member__badge" data-testid="member-creator-badge">
+                      Creator
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
       ) : activeTab === 'expenses' ? (
         <div className="group-expenses">
           <div className="group-expenses__toolbar row">
@@ -691,32 +703,38 @@ export function GroupViewPage() {
           <h2 id="join-requests-heading">Join requests</h2>
           {requestsError !== null && <p role="alert">{requestsError}</p>}
           {requestsLoading ? (
-            <p>Loading join requests…</p>
+            <p className="muted">Loading join requests…</p>
           ) : requests.length === 0 ? (
-            <p data-testid="join-requests-empty">No pending join requests.</p>
+            <p className="muted" data-testid="join-requests-empty">
+              No pending join requests.
+            </p>
           ) : (
-            <ul data-testid="join-request-list">
+            <ul className="list group-join-request-list" role="list" data-testid="join-request-list">
               {requests.map((request) => (
-                <li key={request.id} data-testid="join-request-item">
-                  <span>{request.requester.displayName}</span>
-                  <button
-                    type="button"
-                    disabled={decidingId === request.id}
-                    onClick={() => {
-                      void decide(request.id, 'APPROVED');
-                    }}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    disabled={decidingId === request.id}
-                    onClick={() => {
-                      void decide(request.id, 'REJECTED');
-                    }}
-                  >
-                    Reject
-                  </button>
+                <li className="group-join-request" key={request.id} data-testid="join-request-item">
+                  <span className="group-join-request__name">{request.requester.displayName}</span>
+                  <span className="group-join-request__actions">
+                    <button
+                      type="button"
+                      className="btn group-join-request__approve"
+                      disabled={decidingId === request.id}
+                      onClick={() => {
+                        void decide(request.id, 'APPROVED');
+                      }}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--secondary group-join-request__reject"
+                      disabled={decidingId === request.id}
+                      onClick={() => {
+                        void decide(request.id, 'REJECTED');
+                      }}
+                    >
+                      Reject
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>
