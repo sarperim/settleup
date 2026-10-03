@@ -1,34 +1,95 @@
 /**
- * `/login` page styles (TKT-ui-002) — colocated with `LoginPage.tsx`.
+ * `/login` page styles (TKT-ui-002; 1:1 restyle TKT-ui-012) — colocated with
+ * `LoginPage.tsx`.
  *
- * PG-002 presentation only: a centered, raised card on the beige surface.
- * Every colour/type/size value resolves through a custom property from
- * `styles/tokens.css`; nothing here changes the form's function, labels,
- * roles or copy.
+ * PG-002 presentation only: a centered, raised card on the warm-cream surface.
+ *
+ * Geometry is pinned to the board-01 "Login" reference (file key
+ * `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:24031`, mobile layout
+ * `2:24075`): a 480px card with a 28px inner padding on desktop (20px on
+ * mobile), an 18px child rhythm, a 30px heading, 13px labels/links, 15px
+ * control text, 46px inputs and a 44px full-width primary button.
+ *
+ * Colour/radius/shadow resolve through `styles/tokens.css` custom properties.
+ * The reference's exact type/spacing values have no token in the frozen token
+ * layer (the reference family/type swap is an accepted deviation — owner
+ * waiver of TKT-ui-010 E1), so the page-local sizes below encode the reference
+ * geometry directly. Nothing here changes the form's function, labels, roles
+ * or copy.
  */
 
 .login-page {
   display: flex;
   justify-content: center;
-  padding-block: var(--space-6);
+  padding-block: 1.625rem; /* 26px — reference mobile content padding */
 }
 
 .login-card {
+  display: grid;
+  gap: 1.125rem; /* 18px — reference card child rhythm */
   width: 100%;
-  max-width: 26rem;
+  max-width: 30rem; /* 480px — reference card width */
+  padding: 1.25rem; /* 20px — reference mobile card padding */
 }
 
-.login-card form {
-  max-width: none;
+.login-card h1 {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — reference heading */
+  line-height: 1.18;
 }
 
 /* The submit is the card's primary action: full width. */
 .login-card button[type='submit'] {
   width: 100%;
+  height: 2.75rem; /* 44px — reference button height */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* Fields own their rhythm; the form is not the visual boundary. */
+.login-card form {
+  max-width: none;
+  gap: 1.125rem; /* 18px between fields */
+  margin-block: 0;
+}
+
+.login-field {
+  display: grid;
+  gap: 0.4375rem; /* 7px — reference label/control gap */
+}
+
+.login-field label {
+  margin-bottom: 0;
+  font-size: 0.8125rem; /* 13px */
+}
+
+.login-field input:not([type='checkbox']):not([type='radio']) {
+  width: 100%;
+  max-width: none;
+  height: 2.875rem; /* 46px — reference input height */
+  min-height: 2.875rem;
+  padding: 0 0.875rem; /* 14px — reference input padding */
+  font-size: 0.9375rem; /* 15px */
+}
+
+.login-card [role='alert'] {
+  margin: 0;
 }
 
 .login-switch {
   margin: 0;
   text-align: center;
-  font-size: var(--font-size-sm);
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* Desktop reference proportions (acceptance viewport: 1230px). */
+@media (min-width: 48rem) {
+  .login-page {
+    padding-block: 3.625rem; /* 58px — reference desktop content padding */
+  }
+
+  .login-card {
+    padding: 1.75rem; /* 28px — reference desktop card padding */
+  }
 }
