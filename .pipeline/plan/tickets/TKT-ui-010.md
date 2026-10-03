@@ -1,6 +1,6 @@
 # TKT-ui-010: Iteration-3 foundation — reference-driven token refresh & shared styles
 
-- Status: todo
+- Status: blocked
 - Size: M
 - Scope:
   - Modify: `apps/web/src/styles/tokens.css`, `apps/web/src/styles/base.css`, `apps/web/src/styles/fonts.css` (only if the references change typography or font family)
@@ -19,3 +19,19 @@
 - Figma refs: file `XzY4HLCoW70yfI9NgeLXqC` (page `0:1`) — read via the figma MCP; no variables exist, values come from `get_design_context` output. Board chrome ("Board heading", state labels) is scaffolding — never implemented.
 - Dependencies: none in-repo — but requires (a) the `figma/` snapshot commit on main, and (b) the figma MCP server reachable from the coder environment (user-level opencode config, verified 2026-10-03)
 - Parallel group: none — iteration-3 foundation; every page ticket depends on it
+
+## Blocker (2026-10-03) — ESCALATED: typography fidelity gap (E1)
+
+Implementation landed and is code-merge-ready: **PR #49** (branch `tkt-ui-010`, base `dev`), CI green at head `4a1314c`; MCP gate passed and token values extracted. The review loop escalated on an acceptance-relevant gap only the owner can resolve.
+
+**E1 (the blocking decision):** the Figma references use **Nunito Sans + Inter**; the shipped font stack is **Fraunces + Nunito**. Verified by both coder and reviewers against the design context. Closing the gap requires adding `@fontsource-variable/nunito-sans` and `@fontsource-variable/inter` to `package.json`/`pnpm-lock.yaml` — TKT-ui-001's scope, not TKT-ui-010's — so the coder correctly deferred and did **not** expand scope. Because iteration-3's contract is "1:1 screens," the type does not match; not a waivable detail.
+
+**Owner options:**
+1. Authorize the font dependency — open a scoped font ticket (or amend TKT-ui-010's scope) to add the two packages and re-pin `fonts.css` fonts tokens, then re-dispatch.
+2. Waive E1 — accept Fraunces + Nunito for this iteration (recorded as a scope/acceptance deviation).
+
+**NF1 (non-blocking, should-fix):** `--color-accent-contrast` changed `#4a2a2c`→`#9d493f` (`tokens.css:44`, consumed by 3 pages) is not recorded in the `00-ux-pages.md` amendment — one-line fix, or waive (value already recorded under accent-strong).
+
+**Resolved in this ticket:** acceptance 6 — third supporting color **ABSENT**, independently verified; none invented; the iteration-2 owner request stays open. Acceptance 7 flow-back amendment landed.
+
+**Review artifacts:** `reviews/TKT-ui-010-round-{1,2,3}.md`. No merge was performed. Ticket remains unmerged; PR #49 stays open for the owner.
