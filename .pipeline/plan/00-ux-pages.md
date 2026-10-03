@@ -70,6 +70,20 @@ The design file is connected to the pipeline via the Figma MCP server (user-leve
 - **State catalogs:** several boards lay out multiple UI states side by side (board 08's request-state grid of five cards; board 07's prefilled/exact-split columns; permission-denied cards). Each card is one state the app renders at the right moment — never all states on one page.
 - **Workflow per screen:** `get_design_context` on the Desktop and Mobile layout nodes (reference code + assets) → implement → verify against `get_screenshot` renders and the frozen PNG snapshot. Structural deltas discovered in a board flow back per the freeze rule above.
 
+#### Pinned specifics — TKT-ui-010, 2026-10-03
+
+Recorded on landing the iteration-3 foundation (reference-driven token refresh & shared styles). The exact values below are extracted from `get_design_context` output — file key `XzY4HLCoW70yfI9NgeLXqC`, desktop-layout nodes of boards 01/04/05/06/08 (`2:24031`, `2:24338`, `2:24555`, `2:25213`, `2:25997`). They supersede the TKT-ui-001 pinned values above wherever the two differ. Single source: `apps/web/src/styles/tokens.css`.
+
+- **Surfaces (warm cream):** page `#fcf8f2`, raised/card `#fffdfc`, sunken `#f7eee5`, borders `#ddd0c5` / `#c9b7aa`.
+- **Text:** warm browns — `#3d302b` body/headings, `#786a62` muted.
+- **Accent (pastel-red) family:** base/nav `#efa6a0`, strong (primary buttons, links, active, breadcrumb) `#9d493f`, soft (chips, icon backgrounds) `#f6d7d2`; nav text `#6b3832`.
+- **Status:** success `#31705a` / soft `#e2f1e9` (positive balance `#25634f`), danger `#b23e3e` / soft `#fbe7e4` (negative balance `#a74642`), **warning `#99611c` / soft `#fff0d2`** (new — rate-limit and pending/rejected states), focus `#9d493f`.
+- **Radii / shadow:** cards `18px`, controls `12px`, small `8px`; card shadow `0 8px 24px rgba(107,56,50,0.08)`.
+- **Shared classes restyled to the references:** `.card`, `.alert` (+ `--success` / `--warning` / `--info`), `.list`, `.btn` + `.btn--secondary` / `.btn--danger`, `.muted`, `.stack`, `.row`. Page tickets consume the tokens via `var(--…)`; page-specific CSS stays colocated (`PG-002…PG-009`).
+- **Third supporting color (iteration-2 open item) — answer: absent.** The references carry only the cream/brown/red-accent palette plus *semantic* status colours (green success, amber warning, red danger) and multi-hue per-member avatars (decorative). No third *supporting/brand* colour beyond the pastel-red family is present, so none was invented. The owner request is **not** closed by this iteration; it remains an open user decision.
+- **Typography — flagged, not yet landed.** The references use **Nunito Sans** (headings/brand) and **Inter** (body/UI) — a different family pairing from the shipped **Fraunces + Nunito** (TKT-ui-001) — at a 30/22/17/15/13/11px scale with 400/500/600/700 weights. Landing the family swap requires the `@fontsource-variable/nunito-sans` and `@fontsource-variable/inter` packages (`package.json` + `pnpm-lock.yaml`), which are outside TKT-ui-010's file scope (TKT-ui-001 explicitly listed those files; this ticket does not). Font tokens and `fonts.css` are therefore unchanged pending a user/planner dependency decision; `--font-size-*` / weights remain the TKT-ui-001 scale.
+- **Verified:** production SPA initial bundle **92.67 KB gzipped** (≤ 300 KB, NFR-ACC-003); fonts self-hosted same-origin (no remote URL; helmet CSP, arch 01 §8.2).
+
 **Design-pinned structural additions (flow-back, pending user confirmation 2026-10-03):** the boards add three structural elements the PG entries did not pin — (a) PG-008: a breadcrumb (group / expense / edit) above the form; (b) PG-008: a logger-only **permission-denied state card** — the design presents denial as an in-page state (badge + message) rather than a redirect; (c) PG-009: a privacy note beneath the join card. Recorded in the PG entries below as iteration-3 additions; further deltas discovered during implementation flow back the same way.
 
 ## Pages
