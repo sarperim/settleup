@@ -1,6 +1,6 @@
 # UX Page Plan — Settle Up
 
-Status: approved at Gate 1 (2026-10-01) · Date: 2026-10-01
+Status: approved at Gate 1 (2026-10-01) · amended 2026-10-03 (§ Design contract — Figma reference screens, iteration 3) · Date: 2026-10-01
 Inputs: `.pipeline/00-project-brief.md`, `.pipeline/analysis/*.md` (4 domain reports), `.pipeline/architecture/01-system-architecture.md` §2 C1, `.pipeline/architecture/03-api-design.md` §6 (SPA route table).
 
 Total: **9 entries** (8 route pages + 1 app-shell layout region).
@@ -34,6 +34,17 @@ Amended on landing the design-system foundation. The approved direction above is
 - **Typography (warm pairing):** **Fraunces** (variable display serif) for headings, **Nunito** (variable humanist sans) for body, packaged self-hosted via `@fontsource-variable/*` (CSS + woff2 only; no runtime JS, no remote CDN).
 - **Styling convention for all later page tickets:** design tokens live in `apps/web/src/styles/tokens.css` (the single source of colour/font values); global element defaults and shared classes (`.card`, `.alert`, `.list`, `.btn` + modifiers, `.muted`, `.stack`, `.row`) live in `apps/web/src/styles/base.css`; the app-shell styles live in `apps/web/src/layout/RootLayout.css`; **page-specific CSS is colocated with its page component** and must consume the tokens via `var(--…)` — no hard-coded colour or font values outside `tokens.css`.
 - **Verified budget:** production SPA initial bundle **91.5 KB gzipped** (≤ 300 KB, NFR-ACC-003).
+
+## Design contract — Figma reference screens, 1:1 (user decision, 2026-10-03)
+
+Recorded at iteration-3 intake. The user exported the Figma designs as PNGs into `figma/` (8 files, one per route screen) with the instruction **"i want 1 to 1 screens"** — the contract is pixel-faithful reproduction of the references, not direction-following.
+
+- **Each PNG is a responsive pair** (verified programmatically — see the vision note below): a left panel ~1230 CSS px wide (desktop layout) and a right panel 390 CSS px wide (mobile layout), separated by a transparent gutter. **Acceptance viewports: 1230px and 390px.**
+- **Reference → page mapping:** `login.png` → PG-002 · `createaccount.png` → PG-003 · `changeaccount.png` → PG-004 · `groups.png` → PG-005 · `groupview.png` → PG-006 · `addexpense.png` → PG-007 · `editexpense.png` → PG-008 · `joinbycode.png` → PG-009. PG-001 (app shell) is the chrome visible in every reference screen.
+- **Palette family** (sampled from the PNGs): consistent with the recorded direction — warm cream surfaces, pastel-red accents, warm brown text. Exact token values are re-pinned by the iteration-3 foundation ticket (TKT-ui-010) and flow back here as an amendment, mirroring the TKT-ui-001 pattern.
+- **Structural freeze:** the PG entries below remain the structural contract — content, actions, states. If a reference deviates structurally (shows content or actions a PG entry does not pin, or omits pinned ones), the coder **stops** and it flows back through the user as a plan amendment before that page's work continues. A restyle must not drop or invent functionality.
+- **New capability — mobile layouts:** the current implementation is desktop-shaped; this iteration adds the 390px layout per each reference's right panel. No route changes, no architecture amendment.
+- **Reference handling notes:** (a) `Responsive pair.png` did not survive the copy (only its `Zone.Identifier` stub reached the repo); the pairing is embedded per-screen, so nothing is believed lost — if the standalone file showed anything beyond the per-screen pairs, re-export it. (b) The planner model cannot view images (no vision support); palette/geometry above were extracted programmatically, and **visual verification is delegated to the coder and reviewer agents** (DeepSeek v4.1 Flash — vision capability assumed and proven by TKT-ui-010, the iteration's first ticket, before any page work starts).
 
 ## Pages
 
