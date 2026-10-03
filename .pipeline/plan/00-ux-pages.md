@@ -44,7 +44,33 @@ Recorded at iteration-3 intake. The user exported the Figma designs as PNGs into
 - **Palette family** (sampled from the PNGs): consistent with the recorded direction — warm cream surfaces, pastel-red accents, warm brown text. Exact token values are re-pinned by the iteration-3 foundation ticket (TKT-ui-010) and flow back here as an amendment, mirroring the TKT-ui-001 pattern.
 - **Structural freeze:** the PG entries below remain the structural contract — content, actions, states. If a reference deviates structurally (shows content or actions a PG entry does not pin, or omits pinned ones), the coder **stops** and it flows back through the user as a plan amendment before that page's work continues. A restyle must not drop or invent functionality.
 - **New capability — mobile layouts:** the current implementation is desktop-shaped; this iteration adds the 390px layout per each reference's right panel. No route changes, no architecture amendment.
-- **Reference handling notes:** (a) `Responsive pair.png` did not survive the copy (only its `Zone.Identifier` stub reached the repo); the pairing is embedded per-screen, so nothing is believed lost — if the standalone file showed anything beyond the per-screen pairs, re-export it. (b) The planner model cannot view images (no vision support); palette/geometry above were extracted programmatically, and **visual verification is delegated to the coder and reviewer agents** (DeepSeek v4.1 Flash — vision capability assumed and proven by TKT-ui-010, the iteration's first ticket, before any page work starts).
+- **Reference handling notes:** (a) `Responsive pair.png` did not survive the copy (only its `Zone.Identifier` stub reached the repo); the pairing is embedded per-screen, so nothing is believed lost — if the standalone file showed anything beyond the per-screen pairs, re-export it. (b) The planner model cannot view images (no vision support); palette/geometry above were extracted programmatically.
+
+#### Figma source of truth (MCP-connected, 2026-10-03)
+
+The design file is connected to the pipeline via the Figma MCP server (user-level opencode config — every pipeline agent: coder, reviewers, orchestrator, inherits access). The MCP is the **primary design source**; the committed PNGs remain the **frozen acceptance snapshots** (a live Figma file can drift mid-PR; reviews verify against the pinned snapshot, and an intentional mid-iteration design change re-freezes it via the user).
+
+- **File:** `settleup` — key `XzY4HLCoW70yfI9NgeLXqC`, single page "Page 1" (`0:1`). Eight numbered board frames, one per screen, stacked vertically at x = −871.
+- **Board map (node IDs):**
+
+| Screen | PG | Board frame | Desktop layout (1230px) | Mobile layout (390px) | PNG snapshot |
+|---|---|---|---|---|---|
+| 01 Login | PG-002 | `2:24021` | `2:24031` | `2:24075` | `figma/login.png` |
+| 02 Create Account | PG-003 | `2:24111` | `2:24121` | `2:24185` | `figma/createaccount.png` |
+| 03 Change Password | PG-004 | `2:24231` | `2:24241` | `2:24289` | `figma/changeaccount.png` |
+| 04 Groups | PG-005 | `2:24328` | `2:24338` | `2:24445` | `figma/groups.png` |
+| 05 Group View | PG-006 | `2:24545` | `2:24555` | `2:24878` | `figma/groupview.png` |
+| 06 Add Expense | PG-007 | `2:25203` | `2:25213` | `2:25401` | `figma/addexpense.png` |
+| 07 Edit Expense | PG-008 | `2:25583` | `2:25593` | `2:25793` | `figma/editexpense.png` |
+| 08 Join by Code | PG-009 | `2:25987` | `2:25997` | `2:26087` | `figma/joinbycode.png` |
+
+  PG-001 (app shell) is the "Top bar" frame inside every board (desktop: 72px; mobile: 81px on boards 01–02 — anonymous nav — vs 94px on boards 03–08 — authenticated nav; matches PG-001's nav sets).
+- **No Figma variables or styles exist** on the design (variable defs returned empty, 2026-10-03). Exact token values are extracted from `get_design_context` output — the reference code carries fills, typography, and layout as text.
+- **Board chrome is scaffolding, not app UI:** each board's "Board heading" (screen number, title, subtitle, responsive label) and the small state labels above state cards document the design — they are NOT implemented. The implementation targets are the **Desktop layout** and **Mobile layout** frames.
+- **State catalogs:** several boards lay out multiple UI states side by side (board 08's request-state grid of five cards; board 07's prefilled/exact-split columns; permission-denied cards). Each card is one state the app renders at the right moment — never all states on one page.
+- **Workflow per screen:** `get_design_context` on the Desktop and Mobile layout nodes (reference code + assets) → implement → verify against `get_screenshot` renders and the frozen PNG snapshot. Structural deltas discovered in a board flow back per the freeze rule above.
+
+**Design-pinned structural additions (flow-back, pending user confirmation 2026-10-03):** the boards add three structural elements the PG entries did not pin — (a) PG-008: a breadcrumb (group / expense / edit) above the form; (b) PG-008: a logger-only **permission-denied state card** — the design presents denial as an in-page state (badge + message) rather than a redirect; (c) PG-009: a privacy note beneath the join card. Recorded in the PG entries below as iteration-3 additions; further deltas discovered during implementation flow back the same way.
 
 ## Pages
 
@@ -116,7 +142,7 @@ Recorded at iteration-3 intake. The user exported the Figma designs as PNGs into
 - **Purpose:** Change an expense the acting user logged (logger-only).
 - **Traces to:** UC-EXP-002; FR-EXP-006, FR-EXP-008
 - **Domain(s):** Expense Tracking
-- **Contains & actions:** The PG-007 form prefilled with the expense's current values; same validation. Editable only by the member who logged the expense (a non-logger never reaches or sees the entry). If amount, participants, or split type change, shares are recomputed; the edited timestamp is recorded. Save and abandon actions; on success return to the group's expenses.
+- **Contains & actions:** The PG-007 form prefilled with the expense's current values; same validation. Editable only by the member who logged the expense (a non-logger never reaches or sees the entry). If amount, participants, or split type change, shares are recomputed; the edited timestamp is recorded. Save and abandon actions; on success return to the group's expenses. *Iteration-3 design-pinned additions:* a breadcrumb (group / expense / edit) above the form; a logger-only permission-denied state card (in-page badge + message, not a redirect) for a non-logger arriving at the edit route.
 - **MoSCoW:** Must
 
 ### PG-009 — Join by code (`/join/:code`)
@@ -124,7 +150,7 @@ Recorded at iteration-3 intake. The user exported the Figma designs as PNGs into
 - **Purpose:** Confirm joining a group whose join code the user holds.
 - **Traces to:** UC-GRP-002; FR-GRP-003, FR-GRP-004; BR-GRP-004, BR-GRP-010
 - **Domain(s):** Groups & Membership
-- **Contains & actions:** The code is resolved and the group's **name** (nothing else) is shown before confirming; confirm action places the join request. States: request pending (awaiting creator approval); request already pending; already a member; code not found; a previously rejected user may re-request. Reached via shared link or via the code entry on PG-005.
+- **Contains & actions:** The code is resolved and the group's **name** (nothing else) is shown before confirming; confirm action places the join request. States: request pending (awaiting creator approval); request already pending; already a member; code not found; a previously rejected user may re-request. Reached via shared link or via the code entry on PG-005. *Iteration-3 design-pinned addition:* a privacy note beneath the join card (existence-hiding reminder).
 - **MoSCoW:** Must
 
 ## Coverage check — both directions
