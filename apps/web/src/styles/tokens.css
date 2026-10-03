@@ -1,12 +1,17 @@
 /**
- * Design tokens — Settle Up (TKT-ui-001).
+ * Design tokens — Settle Up (TKT-ui-001, re-pinned by TKT-ui-010).
  *
- * The single source of truth for the approved design direction
- * (`00-ux-pages.md` § Design direction, 2026-10-01):
+ * The single source of truth for the design system. Iteration 1 chose the
+ * direction; iteration 3 re-pins the concrete values from the Figma reference
+ * screens (`00-ux-pages.md` § Design contract — Figma source of truth,
+ * 2026-10-03). Every value below is extracted from the `get_design_context`
+ * output of the reference boards (file key `XzY4HLCoW70yfI9NgeLXqC`; desktop
+ * layouts of boards 01/04/05/06/08), not sampled by eye:
  *
- *   - light-beige base surfaces,
- *   - a pastel-red accent family, used by the persistent nav bar,
- *   - a warm type pairing (Fraunces display serif + Nunito humanist sans).
+ *   - warm-cream base surfaces,
+ *   - a pastel-red accent family (nav + primary actions + soft chips),
+ *   - warm-brown text,
+ *   - semantic status colours (success / warning / danger).
  *
  * `base.css` and `layout/RootLayout.css` consume these as CSS custom
  * properties; no colour or font value is hard-coded outside this file.
@@ -19,36 +24,44 @@
  */
 
 :root {
-  /* ── Surfaces — light beige base ─────────────────────────────────────── */
-  --color-surface: #f7f2e9;
-  --color-surface-raised: #fffdf8;
-  --color-surface-sunken: #efe7d8;
-  --color-border: #e3d8c6;
-  --color-border-strong: #cdbca2;
+  /* ── Surfaces — warm cream base ──────────────────────────────────────── */
+  --color-surface: #fcf8f2;
+  --color-surface-raised: #fffdfc;
+  --color-surface-sunken: #f7eee5;
+  --color-border: #ddd0c5;
+  --color-border-strong: #c9b7aa;
 
   /* ── Text — warm browns ───────────────────────────────────────────────── */
-  --color-text: #3d3630;
-  --color-text-muted: #7c6f60;
+  --color-text: #3d302b;
+  --color-text-muted: #786a62;
 
   /* ── Pastel-red accent family ─────────────────────────────────────────── */
-  --color-accent: #e59a9d;
-  --color-accent-strong: #d97c80;
-  --color-accent-soft: #f8e2e3;
-  --color-accent-contrast: #4a2a2c;
+  --color-accent: #efa6a0;
+  --color-accent-strong: #9d493f;
+  --color-accent-strong-hover: #853b33;
+  --color-accent-soft: #f6d7d2;
+  /* Text on the soft accent surfaces (chips/icons); consumed by page CSS. */
+  --color-accent-contrast: #9d493f;
+  /* Text on the strong accent surface (primary buttons). */
+  --color-on-accent: #fffdfc;
 
   /* ── Persistent nav bar (pastel red) ──────────────────────────────────── */
-  --color-nav-bg: #edb6b6;
-  --color-nav-text: #45292b;
-  --color-nav-active-bg: #d97c80;
-  --color-nav-active-text: #fffaf6;
+  --color-nav-bg: #efa6a0;
+  --color-nav-text: #6b3832;
+  --color-nav-active-bg: #fffdfc;
+  --color-nav-active-text: #6b3832;
 
   /* ── Status ───────────────────────────────────────────────────────────── */
-  --color-success: #5f8f6f;
-  --color-success-soft: #e3efe5;
-  --color-danger: #c25b55;
-  --color-danger-soft: #f9e3e1;
-  --color-on-danger: #fffaf6;
-  --color-focus: #b5565a;
+  --color-success: #31705a;
+  --color-success-strong: #25634f;
+  --color-success-soft: #e2f1e9;
+  --color-danger: #b23e3e;
+  --color-danger-strong: #a74642;
+  --color-danger-soft: #fbe7e4;
+  --color-warning: #99611c;
+  --color-warning-soft: #fff0d2;
+  --color-on-danger: #fffdfc;
+  --color-focus: #9d493f;
 
   /* ── Typography — warm pairing ────────────────────────────────────────── */
   --font-body: 'Nunito Variable', 'Segoe UI', system-ui, sans-serif;
@@ -78,14 +91,14 @@
   --space-7: 3rem;
 
   /* ── Radii ────────────────────────────────────────────────────────────── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
   --radius-pill: 999px;
 
   /* ── Shadows ──────────────────────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px rgb(61 54 48 / 8%);
-  --shadow-md: 0 6px 18px rgb(61 54 48 / 10%);
+  --shadow-sm: 0 1px 2px rgb(107 56 50 / 8%);
+  --shadow-md: 0 8px 24px rgb(107 56 50 / 8%);
 
   /* ── Layout ───────────────────────────────────────────────────────────── */
   --layout-max-width: 60rem;

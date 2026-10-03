@@ -2,10 +2,17 @@
  * Global element defaults + shared component classes (TKT-ui-001).
  *
  * Two layers:
- *   1. **Element defaults** — so existing pages get the design direction
+ *   1. **Element defaults** — so existing pages get the design system
  *      without markup changes (headings, forms, buttons, lists, alerts).
  *   2. **Shared classes** — the vocabulary later page tickets reuse: `.card`,
- *      `.alert`, `.list`, `.btn` + modifiers, `.muted`, `.stack`, `.row`.
+ *      `.alert` (+ `--success`/`--warning`/`--info`), `.list`, `.btn` +
+ *      modifiers, `.muted`, `.stack`, `.row`.
+ *
+ * The component appearances (cards, alerts, chips, buttons, inputs, badges)
+ * were re-pinned to the iteration-3 Figma reference screens by TKT-ui-010:
+ * warm-cream raised cards with an 18px radius and an 8/24 shadow, 12px
+ * sunken/pill controls, full 1px status-coloured alert borders, and the
+ * pastel-red family for accents.
  *
  * Every colour/font value resolves through a custom property from
  * `tokens.css`; page-specific CSS (colocated with its page from later
@@ -72,7 +79,7 @@ a {
 }
 
 a:hover {
-  color: var(--color-focus);
+  color: var(--color-accent-strong-hover);
 }
 
 code {
@@ -110,7 +117,8 @@ select,
 textarea {
   width: 100%;
   max-width: 24rem;
-  padding: var(--space-2) var(--space-3);
+  min-height: 2.875rem;
+  padding: var(--space-3) var(--space-3);
   color: var(--color-text);
   background-color: var(--color-surface-raised);
   border: 1px solid var(--color-border-strong);
@@ -147,35 +155,36 @@ button,
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: 2.75rem;
   padding: var(--space-2) var(--space-4);
-  color: var(--color-accent-contrast);
-  background-color: var(--color-accent);
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
   border: 1px solid var(--color-accent-strong);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-md);
   font: inherit;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
   text-decoration: none;
   cursor: pointer;
 }
 
 button:hover:not(:disabled),
 .btn:hover:not(:disabled) {
-  background-color: var(--color-accent-strong);
+  background-color: var(--color-accent-strong-hover);
 }
 
 button[aria-pressed='true'] {
-  background-color: var(--color-accent-strong);
-  color: var(--color-nav-active-text);
+  background-color: var(--color-accent-strong-hover);
+  color: var(--color-on-accent);
 }
 
 .btn--secondary {
-  color: var(--color-text);
-  background-color: var(--color-surface-raised);
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
   border-color: var(--color-border-strong);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background-color: var(--color-surface-sunken);
+  background-color: var(--color-accent-soft);
 }
 
 .btn--danger {
@@ -188,7 +197,7 @@ button[aria-pressed='true'] {
   filter: brightness(0.94);
 }
 
-/* ── Lists (cards by default) ────────────────────────────────────────────── */
+/* ── Lists (soft sunken rows by default) ─────────────────────────────────── */
 
 ul,
 .list {
@@ -205,8 +214,7 @@ li {
   align-items: baseline;
   gap: var(--space-2) var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-sunken);
   border-radius: var(--radius-md);
 }
 
@@ -217,23 +225,36 @@ li {
   background-color: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
-/* Alerts: also applied to the bare `role="alert"` used by the pages. */
+/* Alerts: also applied to the bare `role="alert"` used by the pages. The
+ * border is the status colour at the references' 25% opacity. */
 .alert,
 [role='alert'] {
-  padding: var(--space-3) var(--space-4);
-  color: var(--color-text);
+  padding: var(--space-3);
+  color: var(--color-danger);
   background-color: var(--color-danger-soft);
-  border: 1px solid var(--color-danger);
-  border-left-width: 4px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
   border-radius: var(--radius-md);
 }
 
 .alert--success {
+  color: var(--color-success);
   background-color: var(--color-success-soft);
-  border-color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 25%, transparent);
+}
+
+.alert--warning {
+  color: var(--color-warning);
+  background-color: var(--color-warning-soft);
+  border-color: color-mix(in srgb, var(--color-warning) 25%, transparent);
+}
+
+.alert--info {
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
+  border-color: color-mix(in srgb, var(--color-nav-text) 25%, transparent);
 }
 
 .muted {
