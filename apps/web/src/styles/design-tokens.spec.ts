@@ -50,8 +50,8 @@ const fonts = withoutComments(readStyle('fonts.css'));
 /** Every consumer stylesheet in `layout/` + `pages/` (all but `styles/`). */
 function readCssDir(dir: string, label: string): { name: string; css: string }[] {
   return readdirSync(dir)
-    .filter((name) => name.endsWith('.css'))
-    .map((name) => ({
+    .filter((name: string) => name.endsWith('.css'))
+    .map((name: string) => ({
       name: `${label}/${name}`,
       css: withoutComments(readFileSync(`${dir}/${name}`, 'utf8')),
     }));
