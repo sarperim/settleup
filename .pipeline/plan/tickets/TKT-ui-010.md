@@ -1,6 +1,6 @@
 # TKT-ui-010: Iteration-3 foundation — reference-driven token refresh & shared styles
 
-- Status: todo
+- Status: blocked
 - Size: M
 - Scope:
   - Modify: `apps/web/src/styles/tokens.css`, `apps/web/src/styles/base.css`, `apps/web/src/styles/fonts.css` (only if the references change typography or font family)
@@ -18,3 +18,18 @@
 - UX refs: `00-ux-pages.md` § Design contract — Figma reference screens (2026-10-03) — the whole section; § Pinned specifics — TKT-ui-001 (the values being refreshed)
 - Dependencies: none in-repo — but requires the `figma/` reference commit on main first (planner lands it with user approval before dispatch)
 - Parallel group: none — iteration-3 foundation; every page ticket depends on it
+
+## Blocker (2026-10-03) — vision-proof gate failed
+
+Dispatched coder ran the acceptance item 1 gate and it **fails**: the model (DeepSeek v4.1 Flash) has no image input — `Read` on `figma/*.png` returns "Cannot read image (this model does not support image input)". No vision-capable tool is available. The coder correctly changed nothing and guessed nothing.
+
+This invalidates the iteration-3 design contract's founding assumption (`00-ux-pages.md` § Design contract 2026-10-03: "visual verification is delegated to the coder and reviewer agents (DeepSeek v4.1 Flash — vision capability assumed and proven by TKT-ui-010)"). Reviewer agents are the same model family, so the reviewer-visually-verifies fallback is likewise unproven.
+
+**Impact:** TKT-ui-010 cannot complete; TKT-ui-011 and the P-12 wave (ui-012…019) are blocked transitively.
+
+**Unblocks via a user decision (not an agent call):**
+1. Provide a vision-capable model/tool for the coder + reviewers, then re-dispatch; or
+2. A human extracts the exact palette/typography from the PNGs and records them in `00-ux-pages.md` § Design contract, converting TKT-ui-010 to a value-application ticket; or
+3. Explicitly authorize programmatic-only extraction, accepting that typography and 1:1 visual fidelity cannot be verified — a scope reduction that must be recorded in the plan before dispatch.
+
+Reconciled run artifact: `.pipeline/plan/run-report.md` (iteration-3). No PR was opened; the dead `tkt-ui-010` worktree was removed.
