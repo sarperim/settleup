@@ -28,7 +28,7 @@
 // typechecks cleanly. Vitest's default CSS stub empties `?raw` CSS imports, so
 // reading the source text is the only faithful route.
 // @ts-expect-error node builtin, resolved only at runtime under Vitest.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 // @ts-expect-error node builtin, resolved only at runtime under Vitest.
 import { fileURLToPath } from 'node:url';
 
@@ -46,6 +46,22 @@ function withoutComments(css: string): string {
 const tokens = readStyle('tokens.css');
 const base = withoutComments(readStyle('base.css'));
 const fonts = withoutComments(readStyle('fonts.css'));
+
+/** Every consumer stylesheet in `layout/` + `pages/` (all but `styles/`). */
+function readCssDir(dir: string, label: string): { name: string; css: string }[] {
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.css'))
+    .map((name) => ({
+      name: `${label}/${name}`,
+      css: withoutComments(readFileSync(`${dir}/${name}`, 'utf8')),
+    }));
+}
+
+const singleSourceStyles: { name: string; css: string }[] = [
+  { name: 'styles/base.css', css: base },
+  ...readCssDir(fileURLToPath(new URL('../layout', import.meta.url)), 'layout'),
+  ...readCssDir(fileURLToPath(new URL('../pages', import.meta.url)), 'pages'),
+];
 
 function tokenValue(name: string): string {
   const match = tokens.match(new RegExp(`--${name}\\s*:\\s*([^;]+);`));
@@ -91,9 +107,11 @@ describe('TKT-ui-010 · reference palette is pinned in tokens.css (acceptance 2)
     expect(tokenValue('shadow-md')).toBe('0 8px 24px rgb(107 56 50 / 8%)');
   });
 
-  it('is the single source: base.css hard-codes no colour value', () => {
-    expect(base).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(base).not.toMatch(/\b(?:rgba?|hsla?)\s*\(/);
+  it.each(
+    singleSourceStyles,
+  )('$name consumes the tokens and hard-codes no colour value', ({ css }) => {
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(css).not.toMatch(/\b(?:rgba?|hsla?)\s*\(/);
   });
 });
 
@@ -114,13 +132,16 @@ describe('TKT-ui-010 · shared classes restyled in base.css (acceptance 3)', () 
   ];
 
   it.each(sharedClasses)('defines %s', (selector) => {
-    expect(base).toContain(selector);
+    // Boundary check: `.alert` must be a class of its own, not a substring of
+    // `.alert--success` — otherwise deleting the base rule would still pass.
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    expect(base).toMatch(new RegExp(`${escaped}(?![\\w-])`));
   });
 
   it('consumes the token palette for the shared classes', () => {
     expect(base).toMatch(/\.card\s*\{[^}]*var\(--color-surface-raised\)/s);
     expect(base).toMatch(/\.alert[^{}]*\{[^}]*var\(--color-danger/);
-    expect(base).toMatch(/button,\s*\n\.btn\s*\{[^}]*var\(--color-accent-strong\)/s);
+    expect(base).toMatch(/button,\s*\.btn\s*\{[^}]*var\(--color-accent-strong\)/s);
   });
 });
 
@@ -133,9 +154,44 @@ describe('TKT-ui-010 · fonts are self-hosted (acceptance 5)', () => {
 });
 
 describe('TKT-ui-010 · no third supporting colour invented (acceptance 6)', () => {
-  it('defines no supporting/brand colour beyond the accent + semantic status set', () => {
-    const names = [...tokens.matchAll(/--(color-[a-z0-9-]+)\s*:/g)].map((m) => m[1] ?? '');
-    expect(names.length).toBeGreaterThan(0);
-    expect(names.some((name) => /support|brand-?2|secondary|tertiary/.test(name))).toBe(false);
+  // The exact --color-* set shipped: cream/brown surfaces+text, the pastel-red
+  // accent family, the nav pair, and semantic status (success/warning/danger).
+  // An exact-set equality catches both an invented third colour (any new name)
+  // and an accidental removal, without depending on an English name spelling.
+  const expectedColorTokens = [
+    'color-accent',
+    'color-accent-contrast',
+    'color-accent-soft',
+    'color-accent-strong',
+    'color-accent-strong-hover',
+    'color-border',
+    'color-border-strong',
+    'color-danger',
+    'color-danger-soft',
+    'color-danger-strong',
+    'color-focus',
+    'color-nav-active-bg',
+    'color-nav-active-text',
+    'color-nav-bg',
+    'color-nav-text',
+    'color-on-accent',
+    'color-on-danger',
+    'color-surface',
+    'color-surface-raised',
+    'color-surface-sunken',
+    'color-success',
+    'color-success-soft',
+    'color-success-strong',
+    'color-text',
+    'color-text-muted',
+    'color-warning',
+    'color-warning-soft',
+  ];
+
+  it('defines exactly the accent + semantic status colour set, nothing invented', () => {
+    const actual = [
+      ...new Set([...tokens.matchAll(/--(color-[a-z0-9-]+)\s*:/g)].map((m) => m[1] ?? '')),
+    ].sort();
+    expect(actual).toEqual([...expectedColorTokens].sort());
   });
 });
