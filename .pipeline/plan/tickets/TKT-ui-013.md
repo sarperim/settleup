@@ -1,7 +1,7 @@
 # TKT-ui-013: Register — 1:1 restyle (PG-003)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/51 (base `tkt-ui-010`, stacked)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/53 (base `dev`, merged; originally opened as #51 stacked on `tkt-ui-010`)
 - Size: S
 - Scope:
   - Modify: `apps/web/src/pages/RegisterPage.tsx` + colocated `RegisterPage.css`

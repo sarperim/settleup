@@ -1,6 +1,6 @@
 # TKT-ui-011: App shell — responsive chrome per the references (PG-001)
 
-- Status: todo
+- Status: blocked
 - Size: M
 - Scope:
   - Modify: `apps/web/src/layout/RootLayout.tsx` + colocated `RootLayout.css`
@@ -16,3 +16,18 @@
 - Figma refs: file `XzY4HLCoW70yfI9NgeLXqC` — Top bar frames: authenticated desktop `2:24556` (board 05), anonymous desktop `2:24032` (board 01); mobile Top bars are the first children of the mobile layouts (`2:24878` authenticated, `2:24075` anonymous). Brand mark assets exportable via `get_design_context`/`download_assets`.
 - Dependencies: TKT-ui-010 (refreshed tokens)
 - Parallel group: none — lands before the page tickets: every page screenshot includes the shell, so page verification is only meaningful against the new chrome
+
+## Blocker (2026-10-03) — Figma MCP read quota exhausted
+
+Dispatched coder stopped before touching any file (worktree clean, no PR). **The Figma MCP read quota is exhausted** — every read tool (`get_design_context`, `get_metadata`, `get_screenshot`) returns *"You've reached the Figma MCP tool call limit on the Starter plan."* Confirmed independently by the orchestrator. Cause: plan `Sarp's team`, tier `starter`, seat `View` — the official limit is ~**20 tool calls per month**, consumed by the earlier iteration-3 tickets (ui-010/012/013).
+
+No non-MCP fallback exists: the frozen `figma/*.png` snapshots cannot be used because this model has **no image input**; no design-context output for the top-bar nodes was saved to the repo or `/tmp`; and the MCP is OAuth-only (no PAT/REST fallback under the filesystem/CSP boundary). The brand-mark asset is only obtainable via the MCP.
+
+**Impact:** TKT-ui-011 cannot be implemented to the 1:1 contract; and TKT-ui-014…019 (P-12 remaining) are blocked too — each needs design-context reads for its board.
+
+**Unblocks via an owner action (not an agent call):**
+1. Restore MCP read quota — upgrade the Figma seat to Dev/Full (≈200/day) or the plan; or wait for the monthly reset; **or**
+2. Provide a Figma Personal Access Token (or a saved design-context dump for the top-bar + page nodes) so the coder can use the REST API without MCP quota; **or**
+3. Explicitly re-scope iteration 3 to "structural only, no 1:1 fidelity/brand mark" — a scope reduction to be recorded in the plan before dispatch.
+
+No structural contradiction with PG-001 was found — this is purely a tooling/access blocker.

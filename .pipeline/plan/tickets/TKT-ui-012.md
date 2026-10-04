@@ -1,8 +1,8 @@
 # TKT-ui-012: Login — 1:1 restyle (PG-002)
 
-- Status: in-review
+- Status: done
 - Size: S
-- PR: https://github.com/sarperim/settleup/pull/50 (base `tkt-ui-010`, stacked)
+- PR: https://github.com/sarperim/settleup/pull/52 (base `dev`, merged — `1fac614`; originally opened as #50 stacked on `tkt-ui-010`)
 - Scope:
   - Modify: `apps/web/src/pages/LoginPage.tsx` + colocated `LoginPage.css`
   - Must NOT touch: `apps/web/src/styles/**`, `apps/web/src/layout/**`, any other page, `apps/web/src/api/**`, `apps/web/src/routes.ts`, `apps/api/**`, existing spec files, `figma/**`
