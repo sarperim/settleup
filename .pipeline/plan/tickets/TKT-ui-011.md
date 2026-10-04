@@ -1,7 +1,7 @@
 # TKT-ui-011: App shell — responsive chrome per the references (PG-001)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/54 (base `dev`)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/54 (base `dev`, merged — `d834a72`; unblocked via owner Figma PAT / REST API)
 - Size: M
 - Scope:
   - Modify: `apps/web/src/layout/RootLayout.tsx` + colocated `RootLayout.css`
