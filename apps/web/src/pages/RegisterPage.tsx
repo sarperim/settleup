@@ -7,6 +7,14 @@
  * Errors are shown from the typed §4 envelope; success navigates straight to
  * the groups overview — registration establishes the session (FR-ACC-010), so
  * there is no separate login or email-verification step.
+ *
+ * Structure is frozen by PG-003; the TKT-ui-013 restyle only regroups the
+ * fields into the reference's label/control rhythm (email, password,
+ * display-name — the PG-003 order) and themes the invalid-field state. No
+ * roles, testids or copy change: the frozen `<h1>Create account</h1>` (asserted
+ * by `App.spec.tsx`) is kept even though board 02 labels the card
+ * "Create your account" — that copy delta flows back rather than break the
+ * test.
  */
 
 import { useState, type FormEvent } from 'react';
@@ -86,50 +94,60 @@ export function RegisterPage() {
     <section className="register-page">
       <div className="card register-card">
         <h1>Create account</h1>
-        {error !== null && <p role="alert">{error}</p>}
+        {error !== null && (
+          <p role="alert" className="alert">
+            {error}
+          </p>
+        )}
         <form onSubmit={onSubmit} noValidate>
-          <label htmlFor="register-display-name">Display name</label>
-          <input
-            id="register-display-name"
-            name="displayName"
-            type="text"
-            minLength={FIELD_LIMITS.displayName.minLength}
-            maxLength={FIELD_LIMITS.displayName.maxLength}
-            value={displayName}
-            onChange={(event) => {
-              setDisplayName(event.target.value);
-            }}
-            aria-invalid={fieldErrors.displayName !== undefined}
-          />
-          {fieldErrors.displayName !== undefined && <p role="alert">{fieldErrors.displayName}</p>}
+          <div className="register-field">
+            <label htmlFor="register-email">Email</label>
+            <input
+              id="register-email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+              }}
+              aria-invalid={fieldErrors.email !== undefined}
+            />
+            {fieldErrors.email !== undefined && <p role="alert">{fieldErrors.email}</p>}
+          </div>
 
-          <label htmlFor="register-email">Email</label>
-          <input
-            id="register-email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value);
-            }}
-            aria-invalid={fieldErrors.email !== undefined}
-          />
-          {fieldErrors.email !== undefined && <p role="alert">{fieldErrors.email}</p>}
+          <div className="register-field">
+            <label htmlFor="register-password">Password</label>
+            <input
+              id="register-password"
+              name="password"
+              type="password"
+              minLength={FIELD_LIMITS.password.minLength}
+              maxLength={FIELD_LIMITS.password.maxLength}
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+              }}
+              aria-invalid={fieldErrors.password !== undefined}
+            />
+            {fieldErrors.password !== undefined && <p role="alert">{fieldErrors.password}</p>}
+          </div>
 
-          <label htmlFor="register-password">Password</label>
-          <input
-            id="register-password"
-            name="password"
-            type="password"
-            minLength={FIELD_LIMITS.password.minLength}
-            maxLength={FIELD_LIMITS.password.maxLength}
-            value={password}
-            onChange={(event) => {
-              setPassword(event.target.value);
-            }}
-            aria-invalid={fieldErrors.password !== undefined}
-          />
-          {fieldErrors.password !== undefined && <p role="alert">{fieldErrors.password}</p>}
+          <div className="register-field">
+            <label htmlFor="register-display-name">Display name</label>
+            <input
+              id="register-display-name"
+              name="displayName"
+              type="text"
+              minLength={FIELD_LIMITS.displayName.minLength}
+              maxLength={FIELD_LIMITS.displayName.maxLength}
+              value={displayName}
+              onChange={(event) => {
+                setDisplayName(event.target.value);
+              }}
+              aria-invalid={fieldErrors.displayName !== undefined}
+            />
+            {fieldErrors.displayName !== undefined && <p role="alert">{fieldErrors.displayName}</p>}
+          </div>
 
           <button type="submit" disabled={submitting}>
             Create account

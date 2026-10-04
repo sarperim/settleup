@@ -1,34 +1,118 @@
 /**
- * `/register` page styles (TKT-ui-002) — colocated with `RegisterPage.tsx`.
+ * `/register` page styles (TKT-ui-002; 1:1 restyle TKT-ui-013) — colocated with
+ * `RegisterPage.tsx`.
  *
- * PG-003 presentation only: a centered, raised card on the beige surface.
- * Every colour/type/size value resolves through a custom property from
- * `styles/tokens.css`; nothing here changes the form's function, labels,
- * roles or copy.
+ * PG-003 presentation only: a centered, raised card on the warm-cream surface.
+ *
+ * Geometry is pinned to the board-02 "Create Account" reference (file key
+ * `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:24121`, mobile layout `2:24185`):
+ * a 480px card with a 28px inner padding on desktop (20px on mobile), a 16px
+ * child/gap rhythm, a 30px heading, 13px labels/links, 15px control text, 46px
+ * inputs and a 44px full-width primary button. This is the same card language
+ * as PG-002 (TKT-ui-012) — the one delta is board 02's 16px card rhythm
+ * (PG-002 uses 18px), which is followed here because board 02 is the size
+ * authority.
+ *
+ * Colour/radius/shadow resolve through `styles/tokens.css` custom properties.
+ * The reference's exact type/spacing values have no token in the frozen token
+ * layer (the reference family/type swap is an accepted deviation — owner waiver
+ * of TKT-ui-010 E1), so the page-local sizes below encode the reference
+ * geometry directly. Nothing here changes the form's function, labels, roles or
+ * copy (the frozen `<h1>Create account</h1>` and the copy deltas — the
+ * reference's subtitle, field hints and success footer — are routed back, not
+ * silently adopted).
  */
 
 .register-page {
   display: flex;
   justify-content: center;
-  padding-block: var(--space-6);
+  padding-block: 1.625rem; /* 26px — mobile content padding (PG-002 sibling) */
 }
 
 .register-card {
+  display: grid;
+  gap: 1rem; /* 16px — board 02 card child rhythm */
   width: 100%;
-  max-width: 26rem;
+  max-width: 30rem; /* 480px — reference card width */
+  padding: 1.25rem; /* 20px — mobile card padding */
 }
 
+.register-card h1 {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — reference heading */
+  line-height: 1.18;
+}
+
+/* Fields own their rhythm; the form is not the visual boundary. */
 .register-card form {
   max-width: none;
+  gap: 1rem; /* 16px between fields */
+  margin-block: 0;
+}
+
+.register-field {
+  display: grid;
+  gap: 0.4375rem; /* 7px — reference label/control gap */
+}
+
+.register-field label {
+  margin-bottom: 0;
+  font-size: 0.8125rem; /* 13px */
+}
+
+.register-field input:not([type='checkbox']):not([type='radio']) {
+  width: 100%;
+  max-width: none;
+  height: 2.875rem; /* 46px — reference input height */
+  min-height: 2.875rem;
+  padding: 0 0.875rem; /* 14px — reference input padding */
+  font-size: 0.9375rem; /* 15px */
+}
+
+/* Invalid-field state (reference "Invalid fields" card): red border + 12px
+ * red message, not the shared alert box. */
+.register-field input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.register-field [role='alert'] {
+  margin: 0;
+  padding: 0;
+  color: var(--color-danger);
+  background: none;
+  border: 0;
+  font-size: 0.75rem; /* 12px */
+  line-height: 1.4;
 }
 
 /* The submit is the card's primary action: full width. */
 .register-card button[type='submit'] {
   width: 100%;
+  height: 2.75rem; /* 44px — reference button height */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* Server "email already taken"/generic error — the shared alert box, 13px. */
+.register-card > [role='alert'] {
+  margin: 0;
+  font-size: 0.8125rem; /* 13px */
 }
 
 .register-switch {
   margin: 0;
   text-align: center;
-  font-size: var(--font-size-sm);
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* Desktop reference proportions (acceptance viewport: 1230px). */
+@media (min-width: 48rem) {
+  .register-page {
+    padding-block: 2.875rem; /* 46px — board 02 desktop content padding */
+  }
+
+  .register-card {
+    padding: 1.75rem; /* 28px — reference desktop card padding */
+  }
 }
