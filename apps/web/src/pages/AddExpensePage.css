@@ -1,148 +1,437 @@
 /**
- * Add-expense page styles (TKT-ui-007) — colocated with `AddExpensePage.tsx`.
+ * Add-expense page styles (TKT-ui-007; 1:1 restyle TKT-ui-017) — colocated with
+ * `AddExpensePage.tsx`.
  *
  * PG-007 is the SC-003 / NFR-EXP-001 critical path: a **single screen** where
  * the common case is description + amount + submit. This stylesheet only
- * dresses that screen with the TKT-ui-001 design direction (via `tokens.css`
- * custom properties) — it adds no wizard steps, no focus management and no
- * round-trips, so the timed journey (TC-EXP-028) is untouched. All
- * colour/type values resolve through tokens; no hard-coded values here.
+ * dresses that screen — it adds no wizard steps, no focus management and no
+ * round-trips, so the timed journey (TC-EXP-028) is untouched.
+ *
+ * Geometry is pinned to the board-06 "Add Expense" reference (file key
+ * `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:25213`, mobile layout `2:25401`):
+ * a 568px card (18px radius, 26px padding on desktop / 18px on mobile), an
+ * 18px child rhythm, a 30px heading, 13px labels, 46px controls, a 300px
+ * segmented split toggle, a 3-up / stacked core-fields row, chip participants
+ * and a per-participant exact grid (4-up desktop / 2-up mobile, 40px inputs)
+ * that stays usable at 390px.
+ *
+ * All colour values resolve through `styles/tokens.css` custom properties; the
+ * reference's exact type/spacing values have no token in the frozen token layer
+ * (the reference family/type swap is an accepted deviation — owner waiver of
+ * TKT-ui-010 E1), so the page-local sizes below encode the reference geometry
+ * directly. Nothing here changes the form's function, labels, roles or copy.
  */
 
 .add-expense {
   display: grid;
-  gap: var(--space-5);
-  max-width: var(--layout-max-width);
+  gap: 14px; /* 14px — reference content rhythm */
+  width: 100%;
+  max-width: 35.5rem; /* 568px — reference card width */
   margin-inline: auto;
 }
 
-.add-expense__title {
-  margin-bottom: 0;
+/* ── Breadcrumb ──────────────────────────────────────────────────────────── */
+
+.add-expense__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1rem; /* 16px */
 }
 
-/* The single-screen form sits on a raised card; base.css's 32rem cap is
- * widened so amount + payer can sit side by side without wrapping. */
+.add-expense__crumb-link {
+  color: var(--color-accent-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.add-expense__crumb-link:hover {
+  color: var(--color-accent-strong-hover);
+}
+
+.add-expense__crumb-sep,
+.add-expense__crumb-current {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
 .add-expense__form {
+  display: grid;
+  gap: 1.125rem; /* 18px — reference card child rhythm */
   width: 100%;
-  max-width: 40rem;
+  max-width: none;
   margin-block: 0;
-  padding: var(--space-5);
+  padding: 1.125rem; /* 18px — reference mobile card padding */
   background-color: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Heading ─────────────────────────────────────────────────────────────── */
+
+.add-expense__heading {
+  display: grid;
+  gap: 0.375rem; /* 6px */
+}
+
+.add-expense__title {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — reference heading */
+  line-height: 1.18;
+}
+
+.add-expense__lede {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5; /* 22.5px */
+}
+
+/* ── Core fields (description / amount / payer) ──────────────────────────── */
+
+.add-expense__core {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px; /* reference field gap */
 }
 
 .add-expense__field {
   display: grid;
-  gap: var(--space-1);
-}
-
-.add-expense__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-4);
-}
-
-@media (max-width: 34rem) {
-  .add-expense__row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Inline validation errors — smaller than the shared `[role="alert"]` block
- * so they hug their field and never push the submit control off-screen. */
-.add-expense__error {
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.add-expense__group {
-  display: grid;
-  gap: var(--space-3);
+  gap: 0.4375rem; /* 7px — reference label/control gap */
   min-width: 0;
+}
+
+.add-expense__label {
+  color: var(--color-text);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+}
+
+.add-expense__field label {
   margin: 0;
-  padding: var(--space-4);
-  background-color: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
 }
 
-.add-expense__group legend {
-  padding-inline: var(--space-1);
-  font-family: var(--font-display);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+.add-expense__field input:not([type='checkbox']):not([type='radio']),
+.add-expense__field select {
+  width: 100%;
+  max-width: none;
+  height: 2.875rem; /* 46px — reference input height */
+  min-height: 2.875rem;
+  padding: 0 0.875rem; /* 14px */
+  font-size: 0.9375rem; /* 15px */
 }
 
-/* Split type — a pill segmented control; the native radios stay present and
- * keyboard-operable, so no focus trap is introduced. */
-.add-expense__segmented {
-  display: inline-flex;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
+/* Inline invalid state — the reference tints the control border red. */
+.add-expense__field input[aria-invalid='true'],
+.add-expense__field select[aria-invalid='true'] {
+  border-color: var(--color-danger);
 }
 
-.add-expense__segmented label {
-  display: inline-flex;
+/* Inline validation — small red text hugging its field, never a box. */
+.add-expense__field-error {
+  margin: 0;
+  padding: 0;
+  color: var(--color-danger);
+  background-color: transparent;
+  border: 0;
+  font-size: 0.75rem; /* 12px */
+  line-height: 0.9375rem; /* 15px */
+}
+
+/* ── Participants ────────────────────────────────────────────────────────── */
+
+.add-expense__participants {
+  display: grid;
+  gap: 0.5625rem; /* 9px */
+}
+
+.add-expense__participants-head {
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.add-expense__segmented label:has(input:checked) {
-  color: var(--color-accent-contrast);
-  background-color: var(--color-accent-soft);
+.add-expense__selection {
+  color: var(--color-success);
+  font-size: 0.75rem; /* 12px */
+  line-height: 0.9375rem;
 }
 
-/* Participant selection — chips that wrap; all preselected by default. */
 .add-expense__choices {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
-.add-expense__choices label {
+.add-expense__choice {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   margin: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: 7px 12px; /* 7px + 1px border → 32px reference chip height */
+  color: var(--color-text-muted);
   background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  line-height: 1rem;
   cursor: pointer;
 }
 
-.add-expense__choices label:has(input:checked) {
+/* The native control stays present, keyboard-operable and clickable, stretched
+ * across the chip so Playwright's `.check()` still targets a visible element. */
+.add-expense__choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.add-expense__choice:has(input:checked) {
+  color: var(--color-accent-contrast);
   background-color: var(--color-accent-soft);
   border-color: var(--color-accent-strong);
 }
 
+.add-expense__choice:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.add-expense__check {
+  display: none;
+  flex: none;
+}
+
+.add-expense__choice:has(input:checked) .add-expense__check {
+  display: inline-block;
+}
+
+/* ── Split toggle ────────────────────────────────────────────────────────── */
+
+.add-expense__split {
+  display: grid;
+  gap: 0.5625rem; /* 9px */
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.add-expense__split legend {
+  padding: 0;
+}
+
+.add-expense__segmented {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  padding: 5px;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.add-expense__segmented label {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 8px 0; /* 8px + 1px border → 34px reference option height */
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+  cursor: pointer;
+}
+
+.add-expense__segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.add-expense__segmented label:has(input:checked) {
+  color: var(--color-accent-strong);
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
+.add-expense__segmented label:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Equal-split hint ────────────────────────────────────────────────────── */
+
+.add-expense__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-color: var(--color-nav-text);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4; /* 18.2px */
+}
+
+/* ── Exact amounts ───────────────────────────────────────────────────────── */
+
+.add-expense__exact-group {
+  display: grid;
+  gap: 10px;
+}
+
+.add-expense__exact-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.add-expense__exact-label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+}
+
+.add-expense__remaining {
+  color: var(--color-danger);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+  white-space: nowrap;
+}
+
+.add-expense__remaining--settled {
+  color: var(--color-success);
+}
+
 .add-expense__exact {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .add-expense__exact-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 8rem;
-  align-items: center;
-  gap: var(--space-3);
+  gap: 5px;
+  min-width: 0;
 }
 
 .add-expense__exact-row label {
   margin: 0;
+  color: var(--color-text);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+}
+
+.add-expense__exact-row input:not([type='checkbox']):not([type='radio']) {
+  width: 100%;
+  max-width: none;
+  height: 2.5rem; /* 40px — reference exact input height */
+  min-height: 2.5rem;
+  padding: 0 0.625rem; /* 10px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+.add-expense__exact-row input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.add-expense__exact-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4; /* 18.2px */
+}
+
+.add-expense__alert-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+
+.add-expense__actions {
+  display: flex;
+  flex-direction: column;
 }
 
 .add-expense__submit {
-  justify-self: start;
-  min-width: 10rem;
+  width: 100%;
+  height: 2.75rem; /* 44px — reference button height */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+.add-expense__return {
+  margin: 0;
+  font-size: 0.75rem; /* 12px */
+  line-height: 0.9375rem;
+}
+
+/* Desktop reference proportions (acceptance viewport: 1230px). */
+@media (min-width: 48rem) {
+  .add-expense__form {
+    padding: 1.625rem; /* 26px — reference desktop card padding */
+  }
+
+  .add-expense__core {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3-up core fields */
+  }
+
+  .add-expense__segmented {
+    width: fit-content;
+  }
+
+  .add-expense__segmented label {
+    flex: none;
+    min-width: 8.875rem; /* 142px — reference option width */
+  }
+
+  .add-expense__exact {
+    grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4-up exact grid */
+  }
+
+  .add-expense__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .add-expense__submit {
+    width: auto;
+  }
 }
