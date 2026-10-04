@@ -1,6 +1,7 @@
 # TKT-ui-018: Edit expense — 1:1 restyle (PG-008)
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/59
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/EditExpensePage.tsx` + colocated `EditExpensePage.css`
