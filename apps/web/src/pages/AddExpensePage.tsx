@@ -31,7 +31,14 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FIELD_LIMITS, type CreateExpenseRequestDto, type Kurus, type MemberDto, type SplitType } from 'shared';
+import {
+  FIELD_LIMITS,
+  KURUS_STORAGE_BOUND,
+  type CreateExpenseRequestDto,
+  type Kurus,
+  type MemberDto,
+  type SplitType,
+} from 'shared';
 
 import './AddExpensePage.css';
 
@@ -50,7 +57,8 @@ interface FieldErrors {
   exact?: string;
 }
 
-function InfoIcon() {
+/** Alert glyph; `variant="info"` moves the dot to the top (info mark). */
+function AlertIcon({ variant = 'alert' }: { variant?: 'info' | 'alert' }) {
   return (
     <svg
       className="add-expense__alert-icon"
@@ -61,23 +69,12 @@ function InfoIcon() {
       focusable="false"
     >
       <circle cx="8.5" cy="8.5" r="7" fill="none" stroke="currentColor" strokeWidth="1" />
-      <path d="M8.5 7.6v4.6M8.5 4.7v.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function AlertIcon() {
-  return (
-    <svg
-      className="add-expense__alert-icon"
-      viewBox="0 0 17 17"
-      width="17"
-      height="17"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <circle cx="8.5" cy="8.5" r="7" fill="none" stroke="currentColor" strokeWidth="1" />
-      <path d="M8.5 4.7v4.6M8.5 12.2v.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d={variant === 'info' ? 'M8.5 7.6v4.6M8.5 4.7v.2' : 'M8.5 4.7v4.6M8.5 12.2v.2'}
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -134,6 +131,9 @@ export function AddExpensePage() {
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
+    // N-4: clear the previous group's name so a groupId change without a remount
+    // never leaves a stale breadcrumb.
+    setGroupName(null);
     void (async () => {
       try {
         // Members gate the form; the group name only dresses the breadcrumb, so
@@ -277,12 +277,42 @@ export function AddExpensePage() {
     parsedAmount.ok && participantIds.length > 0
       ? Math.floor(parsedAmount.value / participantIds.length)
       : 0;
-  const exactSum = participantIds.reduce((sum, id) => {
+
+  // Exact entries are well-formed only when every participant parses (an empty
+  // row is a valid zero). A malformed row must not be silently scored as 0 —
+  // that would let the remaining figure read "settled" while validate() flags
+  // the form (C-1).
+  const exactParses = participantIds.map((id) => {
     const raw = (exactTexts[id] ?? '').trim();
-    const parsed = parseKurus(raw === '' ? '0' : raw);
-    return sum + (parsed.ok ? parsed.value : 0);
-  }, 0);
-  const remainingKurus = parsedAmount.ok ? parsedAmount.value - exactSum : 0;
+    return parseKurus(raw === '' ? '0' : raw);
+  });
+  const exactMalformed = exactParses.some((parsed) => !parsed.ok);
+  const exactSum = exactParses.reduce((sum, parsed) => sum + (parsed.ok ? parsed.value : 0), 0);
+
+  // Signed derived difference (not a `Kurus`): it sums one per-participant
+  // value, so its magnitude can exceed `KURUS_STORAGE_BOUND` even though every
+  // individual input is bounded. `null` means "not computable yet" (the amount
+  // is missing/invalid or an exact row is malformed) and must not be shown as
+  // settled. B-1: formatting above-bound input throws, so the magnitude is
+  // clamped before it reaches `formatKurus`.
+  const remainingKurus =
+    parsedAmount.ok && !exactMalformed ? parsedAmount.value - exactSum : null;
+  const remainingState: 'settled' | 'remaining' | 'over' | 'pending' =
+    remainingKurus === null
+      ? 'pending'
+      : remainingKurus === 0
+        ? 'settled'
+        : remainingKurus < 0
+          ? 'over'
+          : 'remaining';
+  const remainingMagnitude =
+    remainingKurus === null ? 0 : Math.min(Math.abs(remainingKurus), KURUS_STORAGE_BOUND);
+  const remainingText =
+    remainingState === 'pending'
+      ? '— remaining'
+      : remainingState === 'over'
+        ? `₺${formatKurus(remainingMagnitude as Kurus)} over`
+        : `₺${formatKurus(remainingMagnitude as Kurus)} remaining`;
 
   return (
     <section className="add-expense">
@@ -443,7 +473,7 @@ export function AddExpensePage() {
 
             {splitType === 'EQUAL' && (
               <p className="alert alert--info add-expense__hint">
-                <InfoIcon />
+                <AlertIcon variant="info" />
                 <span>
                   Equal split: ₺{formatKurus(shareKurus as Kurus)} each for {participantIds.length}{' '}
                   participants. This updates when you enter the amount.
@@ -456,13 +486,15 @@ export function AddExpensePage() {
                 <div className="add-expense__exact-head">
                   <span className="add-expense__exact-label">Exact amounts per participant</span>
                   <span
-                    className={
-                      remainingKurus === 0
-                        ? 'add-expense__remaining add-expense__remaining--settled'
-                        : 'add-expense__remaining'
-                    }
+                    className={`add-expense__remaining${
+                      remainingState === 'settled'
+                        ? ' add-expense__remaining--settled'
+                        : remainingState === 'pending'
+                          ? ' add-expense__remaining--pending'
+                          : ''
+                    }`}
                   >
-                    ₺{formatKurus(Math.abs(remainingKurus) as Kurus)} remaining
+                    {remainingText}
                   </span>
                 </div>
                 <div className="add-expense__exact">
