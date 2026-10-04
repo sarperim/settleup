@@ -1,7 +1,7 @@
 # TKT-ui-016: Group view — 1:1 restyle (PG-006)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/60
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/60 (base `dev`, merged — `b9292ce`; resumed after an initial coder crash)
 - Size: L
 - Scope:
   - Modify: `apps/web/src/pages/GroupViewPage.tsx` + colocated `GroupViewPage.css`

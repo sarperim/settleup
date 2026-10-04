@@ -1,7 +1,7 @@
 # TKT-ui-017: Add expense — 1:1 restyle (PG-007)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/58
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/58 (base `dev`, merged — `a64ba09`; MERGEABLE pass 2 after one fixer round — blocker B-1 `formatKurus` RangeError clamped)
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/AddExpensePage.tsx` + colocated `AddExpensePage.css`

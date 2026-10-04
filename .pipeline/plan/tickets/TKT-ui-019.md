@@ -1,7 +1,7 @@
 # TKT-ui-019: Join by code — 1:1 restyle (PG-009)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/55 (base `dev`)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/55 (base `dev`, merged — `af2faeb`)
 - Size: S
 - Scope:
   - Modify: `apps/web/src/pages/JoinPage.tsx` + colocated `JoinPage.css`

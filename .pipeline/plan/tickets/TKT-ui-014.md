@@ -1,7 +1,7 @@
 # TKT-ui-014: Change password — 1:1 restyle (PG-004)
 
-- Status: in-review
-- PR: https://github.com/sarperim/settleup/pull/56 (base `dev`)
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/56 (base `dev`, merged — `685af6b`)
 - Size: S
 - Scope:
   - Modify: `apps/web/src/pages/ChangePasswordPage.tsx` + colocated `ChangePasswordPage.css`
