@@ -1,12 +1,27 @@
 /**
- * App shell styles (TKT-ui-001) — colocated with `RootLayout.tsx`.
+ * App shell styles (TKT-ui-001; 1:1 chrome restyle TKT-ui-011) — colocated
+ * with `RootLayout.tsx`.
  *
- * The persistent chrome around every route (PG-001): the pastel-red nav bar
- * carrying the brand, the acting user's display name, the primary
- * navigation, logout, and the anonymous log-in/create-account links.
+ * The persistent chrome around every route (PG-001): the pastel-red top bar
+ * carrying the brand mark + app name, the acting user's display name, the
+ * primary navigation, logout, and the anonymous log-in/create-account links.
  *
- * All colour/type values come from `tokens.css` custom properties. This file
- * only positions and themes; it makes no functional change to the shell.
+ * Geometry is pinned to the "Top bar" frames of the Figma references (file
+ * key `XzY4HLCoW70yfI9NgeLXqC`):
+ *   - desktop (board 05 `2:24556`, board 01 `2:24032`): 72px bar, 32px side
+ *     padding, 30px brand mark, 23px app name, 22px nav gap, 34px logout pill;
+ *   - mobile authenticated (board 05 `2:24878`, first child `2:24879`): 94px
+ *     bar, 18px side / 14px vertical padding, 27px brand mark, 20px app name,
+ *     16px nav gap, 29px logout pill;
+ *   - mobile anonymous (board 01 `2:24075`, first child `2:24076`): 81px bar,
+ *     same brand row, single 16px nav row.
+ *
+ * All colour/type values resolve through `styles/tokens.css` custom
+ * properties (there are no hard-coded colour values — the `layout/` tree is
+ * covered by `styles/design-tokens.spec.ts`). The reference's exact type/spacing
+ * values have no token in the frozen token layer (the reference family/type
+ * swap is an accepted deviation — owner waiver of TKT-ui-010 E1), so the
+ * shell-local sizes below encode the reference geometry directly.
  */
 
 .app-shell {
@@ -19,59 +34,98 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3) var(--space-5);
-  padding: var(--space-3) var(--layout-gutter);
+  gap: 10px;
+  padding: 14px 18px;
   color: var(--color-nav-text);
   background-color: var(--color-nav-bg);
-  box-shadow: var(--shadow-sm);
+  /* The reference's 1px bottom hairline is an *inside* stroke, so an inset
+   * shadow reproduces it without adding to the bar's fixed height. */
+  box-shadow: inset 0 -1px 0 var(--color-nav-text);
 }
 
+/* Row 1 on mobile (brand, then the display name pushed right); stays the
+ * left-hand item on desktop via the auto right margin. */
 .app-brand {
-  font-family: var(--font-display);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
 }
 
+.app-brand-mark {
+  flex: none;
+  width: 27px;
+  height: 27px;
+  background-color: var(--color-nav-text);
+  border-radius: 50%;
+}
+
+.app-brand-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 27px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Row 2 on mobile; right-hand group on desktop. */
 .app-nav {
   display: flex;
+  flex-basis: 100%;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1) var(--space-4);
+  gap: 16px;
 }
 
 .app-nav a {
-  padding: var(--space-1) var(--space-3);
   color: var(--color-nav-text);
-  border-radius: var(--radius-pill);
-  font-weight: var(--font-weight-medium);
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 600;
   text-decoration: none;
 }
 
 .app-nav a:hover {
   color: var(--color-nav-text);
-  background-color: var(--color-accent-soft);
 }
 
-.app-nav a.active {
-  color: var(--color-nav-active-text);
-  background-color: var(--color-nav-active-bg);
+/* The reference renders "Groups" semibold and "Change password" regular — a
+ * static emphasis, not a route-active state. */
+.app-nav a.app-nav__quiet {
+  font-weight: 400;
 }
 
-.app-nav button {
-  color: var(--color-nav-active-text);
-  background-color: var(--color-nav-active-bg);
-  border-color: var(--color-nav-active-bg);
-}
-
-.app-nav button:hover:not(:disabled) {
-  filter: brightness(0.94);
+/* The anonymous nav is heavier overall: the current auth link is boldest. */
+.app-nav--anonymous a.active {
+  font-weight: 700;
 }
 
 .app-user {
-  font-weight: var(--font-weight-medium);
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 700;
   white-space: nowrap;
+}
+
+.app-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 7px 12px;
+  color: var(--color-nav-text);
+  background-color: var(--color-nav-active-bg);
+  border: 0;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-nav button:hover:not(:disabled) {
+  filter: brightness(0.96);
 }
 
 .app-main {
@@ -80,4 +134,40 @@
   max-width: var(--layout-max-width);
   margin-inline: auto;
   padding: var(--space-6) var(--layout-gutter);
+}
+
+/* Desktop reference proportions (acceptance viewport: 1230px). */
+@media (min-width: 48rem) {
+  .app-header {
+    flex-wrap: nowrap;
+    gap: 22px;
+    height: 72px;
+    padding: 0 32px;
+  }
+
+  .app-brand {
+    gap: 10px;
+  }
+
+  .app-brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .app-brand-name {
+    font-size: 23px;
+    line-height: 31px;
+  }
+
+  .app-nav {
+    flex-basis: auto;
+    flex-wrap: nowrap;
+    gap: 22px;
+  }
+
+  .app-nav button {
+    padding: 9px 16px;
+    font-size: 13px;
+    line-height: 16px;
+  }
 }
