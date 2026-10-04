@@ -1,37 +1,321 @@
 /**
- * `/` groups overview styles (TKT-ui-003) — colocated with the page component.
+ * `/` groups overview styles (TKT-ui-003; 1:1 restyle TKT-ui-015) — colocated
+ * with `GroupsOverviewPage.tsx`.
  *
- * Follows the TKT-ui-001 convention: page-specific CSS lives beside its page
- * and consumes the design tokens from `styles/tokens.css` as custom
- * properties — no hard-coded colour or font values. It only lays out the
- * groups list and the two entry panels (create / join by code); the shared
- * `.card`, `.stack`, `.row` classes come from `styles/base.css`.
+ * PG-005 presentation only. Geometry is pinned to board 04 "Groups" (file key
+ * `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:24338`, mobile layout
+ * `2:24445`):
+ *
+ *   - content rhythm 20px mobile / 26px desktop;
+ *   - heading: 30px display title + 15px muted lede; a sunken count chip
+ *     ("N active groups", 13/700) sits at the end on desktop only;
+ *   - group cards: 1-up mobile / 3-up desktop, 18px padding, 18px radius,
+ *     14px inner gap; 22px display name, 13px muted meta, 28px avatar;
+ *   - create/join cards: 1-up mobile / 2-up desktop, 18px padding, 12px gap;
+ *     17px display title, 13/700 labels, 46px controls, 44px full-width
+ *     actions;
+ *   - empty state: sunken 12px panel, 38px soft-accent icon, 17px display
+ *     title, 13px muted body, 44px secondary action.
+ *
+ * Colour/radius/shadow resolve only through `styles/tokens.css` custom
+ * properties (the reference's exact type/spacing values have no token in the
+ * frozen token layer and are encoded locally, mirroring `LoginPage.css`). The
+ * reference's rich card cluster (member avatars, friend count, per-group
+ * balance) has no field in the overview read (`GET /api/groups` carries
+ * id/name/creator/createdAt), so the card renders the data the contract does
+ * carry; the gap is flagged on the ticket.
  */
 
 .groups-overview {
   display: grid;
-  gap: var(--space-5);
+  gap: 1.25rem; /* 20px — mobile content rhythm */
 }
+
+/* ── Page heading ────────────────────────────────────────────────────────── */
+
+.groups-overview__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.groups-overview__heading-text {
+  display: grid;
+  gap: 0.375rem; /* 6px */
+  min-width: 0;
+}
+
+.groups-overview__heading h1 {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — reference page title */
+  line-height: 1.18;
+}
+
+.groups-overview__lede {
+  margin: 0;
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5;
+}
+
+/* Reference ships two lede strings, one per viewport — never both. */
+.groups-overview__lede-desktop {
+  display: none;
+}
+
+.groups-overview__lede-mobile {
+  display: inline;
+}
+
+.groups-overview__summary {
+  display: none;
+  padding: 0.625rem 0.875rem; /* 10px 14px */
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+
+.groups-overview__status {
+  margin: 0;
+}
+
+/* ── Group cards ─────────────────────────────────────────────────────────── */
+
+.groups-overview__list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem; /* 12px — mobile card rhythm */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.groups-overview__card {
+  position: relative;
+  display: grid;
+  align-items: stretch;
+  gap: 0.875rem; /* 14px */
+  padding: 1.125rem; /* 18px */
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.groups-overview__card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.groups-overview__card-info {
+  display: grid;
+  gap: 0.25rem; /* 4px */
+  min-width: 0;
+}
+
+.groups-overview__card-name {
+  margin: 0;
+  font-size: 1.375rem; /* 22px — reference group name */
+  line-height: 1.36;
+}
+
+.groups-overview__card-name a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+/* Stretched link: the whole card opens the group view, the accessible name
+ * stays exactly the group name (TC-GRP-027). */
+.groups-overview__card-name a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.groups-overview__card-name a:hover {
+  color: var(--color-accent-strong);
+}
+
+.groups-overview__card-detail {
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.8125rem; /* 13px */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groups-overview__card-arrow {
+  flex: none;
+  color: var(--color-accent-strong);
+  font-size: 1.125rem; /* 18px */
+  line-height: 1;
+}
+
+.groups-overview__card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.75rem; /* 28px */
+}
+
+.groups-overview__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem; /* 28px */
+  height: 1.75rem;
+  color: var(--color-on-accent);
+  background-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: var(--font-weight-bold);
+}
+
+/* ── Create / join action cards ──────────────────────────────────────────── */
 
 .groups-overview__actions {
   display: grid;
-  gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  grid-template-columns: 1fr;
+  gap: 1rem; /* 16px */
   align-items: start;
 }
 
 .groups-overview__panel {
-  padding: var(--space-5);
+  display: grid;
+  gap: 0.75rem; /* 12px */
+  padding: 1.125rem; /* 18px */
   background-color: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.groups-overview__panel form {
-  margin-block: 0;
+  box-shadow: var(--shadow-md);
 }
 
 .groups-overview__panel h2 {
-  margin-bottom: var(--space-4);
+  margin: 0;
+  font-size: 1.0625rem; /* 17px — reference card title */
+  line-height: 1.36;
+}
+
+.groups-overview__panel form {
+  display: grid;
+  gap: 0.75rem; /* 12px */
+  max-width: none;
+  margin: 0;
+}
+
+.groups-overview__field {
+  display: grid;
+  gap: 0.4375rem; /* 7px — reference label/control gap */
+}
+
+.groups-overview__field label {
+  margin: 0;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: var(--font-weight-bold);
+}
+
+.groups-overview__field input:not([type='checkbox']):not([type='radio']) {
+  width: 100%;
+  max-width: none;
+  height: 2.875rem; /* 46px — reference input height */
+  min-height: 2.875rem;
+  padding: 0 0.875rem; /* 14px */
+  font-size: 0.9375rem; /* 15px */
+}
+
+.groups-overview__hint {
+  margin: 0;
+  font-size: 0.75rem; /* 12px */
+}
+
+/* Both the collapsed reveal action and the revealed submit fill the card. */
+.groups-overview__panel > button,
+.groups-overview__panel form > button {
+  width: 100%;
+  height: 2.75rem; /* 44px — reference action height */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+.groups-overview__panel [role='alert'] {
+  margin: 0;
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+
+.groups-overview__empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.625rem; /* 10px */
+  padding: 1.5rem 1.25rem; /* 24px 20px */
+  text-align: center;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.groups-overview__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.375rem; /* 38px */
+  height: 2.375rem;
+  color: var(--color-accent-strong);
+  background-color: var(--color-accent-soft);
+  border-radius: var(--radius-pill);
+  font-size: 1.125rem;
+}
+
+.groups-overview__empty h2 {
+  margin: 0;
+  font-size: 1.0625rem; /* 17px */
+}
+
+.groups-overview__empty p {
+  margin: 0;
+  font-size: 0.8125rem; /* 13px */
+}
+
+.groups-overview__empty button {
+  height: 2.75rem; /* 44px */
+  min-height: 2.75rem;
+  padding: 0 1.125rem;
+  font-size: 0.8125rem;
+}
+
+/* ── Desktop reference proportions (acceptance viewport: 1230px) ─────────── */
+
+@media (min-width: 48rem) {
+  .groups-overview {
+    gap: 1.625rem; /* 26px — desktop content rhythm */
+  }
+
+  .groups-overview__lede-desktop {
+    display: inline;
+  }
+
+  .groups-overview__lede-mobile {
+    display: none;
+  }
+
+  .groups-overview__summary {
+    display: inline-block;
+  }
+
+  .groups-overview__list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem; /* 16px */
+  }
+
+  .groups-overview__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
