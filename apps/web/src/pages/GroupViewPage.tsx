@@ -119,6 +119,110 @@ function isSuggestionParty(
   return userId !== undefined && (suggestion.payer.id === userId || suggestion.recipient.id === userId);
 }
 
+/**
+ * Decorative per-member avatar (TKT-ui-016). The reference paints each member
+ * a distinct hue; the frozen token layer carries no avatar palette, so the
+ * page reuses the existing semantic/accent tokens (groups `c0`…`c5`, styled in
+ * `GroupViewPage.css`) picked deterministically from the display name — the
+ * colour is redundant decoration, never a signal, and the initial is derived
+ * from the name (PG-006 renders display names only, never email).
+ */
+function avatarVariant(name: string): number {
+  let hash = 0;
+  for (let index = 0; index < name.length; index += 1) {
+    hash = (hash + name.charCodeAt(index) * (index + 1)) % 6;
+  }
+  return hash;
+}
+
+function avatarInitial(name: string): string {
+  const trimmed = name.trim();
+  return trimmed.length > 0 ? trimmed.charAt(0).toLocaleUpperCase() : '?';
+}
+
+/** Short "Mon D" member-joined line (reference: "Joined Aug 30"). */
+function formatJoined(joinedAt: string): string {
+  const date = new Date(joinedAt);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/* ── Decorative glyphs (reference iconography) ───────────────────────────── */
+
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path d="M8 3v10M3 8h10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ReceiptIcon() {
+  return (
+    <svg viewBox="0 0 17 17" width="17" height="17" aria-hidden="true" focusable="false">
+      <path
+        d="M4 2.5h9v12l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M6.5 6h5M6.5 8.5h5" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SparklesIcon() {
+  return (
+    <svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true" focusable="false">
+      <path
+        d="M8 1.5l1.7 4.3L14 7.5l-4.3 1.7L8 13.5l-1.7-4.3L2 7.5l4.3-1.7z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path d="M14 11.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function ArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true" focusable="false">
+      <path d="M2 7h9M8 4l3 3-3 3" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true" focusable="false">
+      <path d="M2.5 7.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 17 17" width="17" height="17" aria-hidden="true" focusable="false">
+      <circle cx="8.5" cy="8.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M8.5 7.5v4M8.5 5.3v.2" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function GroupViewPage() {
   const { groupId } = useParams<{ groupId: string }>();
   const { user } = useAuth();
@@ -408,312 +512,481 @@ export function GroupViewPage() {
 
   return (
     <section className="group-view">
-      <header className="group-header card">
-        <h1>{group?.name ?? 'Group'}</h1>
-        {group?.joinCode !== undefined && (
-          <div className="group-join-code">
-            <p className="group-join-code__value">
-              Join code: <code data-testid="join-code">{group.joinCode}</code>
+      {/* ── Header region ───────────────────────────────────────────────── */}
+      <header className="group-header">
+        <div className="group-identity">
+          <nav className="group-breadcrumb" aria-label="Breadcrumb">
+            <Link to={SPA_ROUTES.groupsOverview}>Groups</Link>
+            <span className="group-breadcrumb__sep" aria-hidden="true">
+              /
+            </span>
+            <span className="group-breadcrumb__current">{group?.name ?? 'Group'}</span>
+          </nav>
+          <h1 className="group-identity__title">{group?.name ?? 'Group'}</h1>
+          {members.length > 0 && (
+            <p className="group-identity__meta">
+              {members.length} {members.length === 1 ? 'member' : 'members'}
             </p>
-            <button
-              type="button"
-              className="btn btn--secondary group-join-code__copy"
-              data-testid="copy-join-code"
-              onClick={() => {
-                void copyJoinCode();
-              }}
-            >
-              Copy
-            </button>
+          )}
+        </div>
+        {group?.joinCode !== undefined && (
+          <aside className="group-join-code">
+            <p className="group-join-code__label">Join code</p>
+            <div className="group-join-code__row">
+              <code className="group-join-code__value" data-testid="join-code">
+                {group.joinCode}
+              </code>
+              <button
+                type="button"
+                className="btn btn--secondary group-join-code__copy"
+                data-testid="copy-join-code"
+                onClick={() => {
+                  void copyJoinCode();
+                }}
+              >
+                <CopyIcon />
+                Copy
+              </button>
+            </div>
             {copyStatus === 'copied' && (
-              <span className="muted group-join-code__status" role="status">
+              <p className="group-join-code__status" role="status">
                 Copied
-              </span>
+              </p>
             )}
             {copyStatus === 'failed' && (
-              <span className="muted group-join-code__status" role="status">
+              <p className="group-join-code__status" role="status">
                 Copy unavailable — select the code to copy it.
-              </span>
+              </p>
             )}
-          </div>
+          </aside>
         )}
       </header>
       {error !== null && <p role="alert">{error}</p>}
 
-      <nav className="group-tabs" aria-label="Group sections">
-        {GROUP_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            className="group-tab"
-            aria-pressed={activeTab === tab}
-            onClick={() => {
-              setActiveTab(tab);
-            }}
-          >
-            {GROUP_TAB_LABELS[tab]}
-          </button>
-        ))}
-      </nav>
+      {/* ── Section panel (tabs + active region) ────────────────────────── */}
+      <div className="group-panel">
+        <nav className="group-tabs" aria-label="Group sections">
+          {GROUP_TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className="group-tab"
+              aria-pressed={activeTab === tab}
+              onClick={() => {
+                setActiveTab(tab);
+              }}
+            >
+              {GROUP_TAB_LABELS[tab]}
+            </button>
+          ))}
+        </nav>
 
-      <section className="group-section" aria-labelledby="group-section-heading">
-        <h2 id="group-section-heading">{GROUP_TAB_LABELS[activeTab]}</h2>
-
-      {activeTab === 'members' ? (
-        <div className="group-members">
-          {loading ? (
-            <p className="muted">Loading members…</p>
-          ) : error === null ? (
-            <ul className="list group-member-list" role="list" data-testid="member-list">
-              {members.map((member) => (
-                <li className="group-member" key={member.id} data-testid="member-item">
-                  <span className="group-member__name">{member.displayName}</span>
-                  {member.isCreator && (
-                    <span className="group-member__badge" data-testid="member-creator-badge">
-                      Creator
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      ) : activeTab === 'expenses' ? (
-        <div className="group-expenses">
-          <div className="group-expenses__toolbar row">
-            {groupId !== undefined && (
+        <section className="group-section" aria-labelledby="group-section-heading">
+          <div className="group-section__head">
+            <div className="group-section__title">
+              <h2 id="group-section-heading">{GROUP_TAB_LABELS[activeTab]}</h2>
+              {activeTab === 'expenses' && !loading && expenses.length > 0 && (
+                <p className="group-section__count">
+                  {expenses.length} {expenses.length === 1 ? 'expense' : 'expenses'} ·{' '}
+                  {formatKurus(
+                    expenses.reduce((sum, expense) => sum + expense.amountKurus, 0) as Kurus,
+                  )}{' '}
+                  total
+                </p>
+              )}
+              {activeTab === 'balances' && (
+                <p className="group-section__hint">
+                  Positive means the group owes them; negative means they owe the group.
+                </p>
+              )}
+              {activeTab === 'settle-up' && (
+                <p className="group-section__hint">
+                  A simple way to bring everyone back to 0.00.
+                </p>
+              )}
+            </div>
+            {activeTab === 'expenses' && groupId !== undefined && (
               <Link
                 to={SPA_ROUTES.addExpense(groupId)}
-                className="btn"
+                className="btn group-section__action"
                 data-testid="add-expense-link"
               >
+                <PlusIcon />
                 Add expense
               </Link>
             )}
           </div>
-          {deleteError !== null && <p role="alert">{deleteError}</p>}
-          {loading ? (
-            <p className="muted">Loading expenses…</p>
-          ) : error === null ? (
-            expenses.length === 0 ? (
-              <p className="muted" data-testid="expenses-empty">
-                No expenses yet.
-              </p>
-            ) : (
-              <ul className="list group-expense-list" role="list" data-testid="expense-list">
-                {expenses.map((expense) => (
-                  <li className="group-expense" key={expense.id} data-testid="expense-item">
-                    <span className="group-expense__description" data-testid="expense-description">
-                      {expense.description}
-                    </span>
-                    <span className="group-expense__amount" data-testid="expense-amount">
-                      {formatKurus(expense.amountKurus as Kurus)}
-                    </span>
-                    <span className="group-expense__payer" data-testid="expense-payer">
-                      Paid by {expense.payer.displayName}
-                    </span>
-                    <span
-                      className="group-expense__participants"
-                      data-testid="expense-participants"
-                    >
-                      For {expense.shares.map((share) => share.participant.displayName).join(', ')}
-                    </span>
-                    <time className="muted group-expense__timestamp" dateTime={expense.createdAt}>
-                      {new Date(expense.createdAt).toLocaleString()}
-                    </time>
-                    {expense.editedAt !== undefined && (
-                      <time
-                        className="muted group-expense__timestamp"
-                        data-testid="expense-edited-at"
-                        dateTime={expense.editedAt}
+
+          {activeTab === 'members' ? (
+            <div className="group-members">
+              {loading ? (
+                <p className="muted">Loading members…</p>
+              ) : error === null ? (
+                <ul className="group-member-list" role="list" data-testid="member-list">
+                  {members.map((member) => (
+                    <li className="group-member" key={member.id} data-testid="member-item">
+                      <span
+                        className={`group-avatar group-avatar--md group-avatar--c${String(avatarVariant(member.displayName))}`}
+                        aria-hidden="true"
                       >
-                        edited {new Date(expense.editedAt).toLocaleString()}
-                      </time>
-                    )}
-                    {groupId !== undefined && user !== null && expense.logger.id === user.id && (
-                      <span className="row group-expense__actions" data-testid="expense-actions">
-                        <Link
-                          to={SPA_ROUTES.editExpense(groupId, expense.id)}
-                          data-testid="edit-expense-link"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          type="button"
-                          className="btn btn--danger group-expense__delete"
-                          data-testid="delete-expense"
-                          disabled={deletingId === expense.id}
-                          onClick={() => {
-                            void removeExpense(expense.id);
-                          }}
-                        >
-                          Delete
-                        </button>
+                        {avatarInitial(member.displayName)}
                       </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )
-          ) : null}
-        </div>
-      ) : activeTab === 'balances' ? (
-        <div className="group-balances">
-          {financialError !== null && <p role="alert">{financialError}</p>}
-          {balancesLoading && balances === null ? (
-            <p className="muted">Loading balances…</p>
-          ) : balances === null ? null : (
-            <>
-              <ul className="list group-balance-list" role="list" data-testid="balance-list">
-                {balances.balances.map((entry) => (
-                  <li
-                    className={`group-balance group-balance--${balanceSign(entry.balanceKurus)}`}
-                    key={entry.member.id}
-                    data-testid="balance-item"
-                  >
-                    <span className="group-balance__member" data-testid="balance-member">
-                      {entry.member.displayName}
-                    </span>
-                    <span className="group-balance__amount" data-testid="balance-amount">
-                      {formatSignedKurus(entry.balanceKurus)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="group-balance-sum" data-testid="balance-sum">
-                Total: {formatSignedKurus(balances.sumKurus)}
-              </p>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="group-settle-up">
-          {financialError !== null && <p role="alert">{financialError}</p>}
-          {settleUpLoading && settleUp === null ? (
-            <p className="muted">Loading settle-up…</p>
-          ) : settleUp === null ? null : (
-            <>
-              <section
-                className="group-settle-up__panel"
-                aria-labelledby="settle-up-outstanding-heading"
-              >
-                <h3 id="settle-up-outstanding-heading">Outstanding</h3>
-                {settleUp.outstanding.length === 0 ? (
-                  <p className="muted" data-testid="outstanding-empty">
-                    Nothing outstanding.
-                  </p>
-                ) : (
-                  <ul
-                    className="list group-settlement-list"
-                    role="list"
-                    data-testid="outstanding-list"
-                  >
-                    {settleUp.outstanding.map((suggestion) => {
-                      const key = `${suggestion.payer.id}:${suggestion.recipient.id}:${String(suggestion.amountKurus)}`;
-                      return (
-                        <li className="group-settlement" key={key} data-testid="outstanding-item">
-                          <span className="group-settlement__text" data-testid="outstanding-text">
-                            {paymentLabel(
-                              suggestion.payer.displayName,
-                              suggestion.recipient.displayName,
-                              suggestion.amountKurus,
-                            )}
+                      <span className="group-member__info">
+                        <span className="group-member__name-row">
+                          <span className="group-member__name" data-testid="member-name">
+                            {member.displayName}
                           </span>
-                          {isSuggestionParty(suggestion, user?.id) && (
-                            <button
-                              type="button"
-                              className="btn group-settlement__action"
-                              data-testid="mark-paid"
-                              disabled={mutatingKey === key}
-                              onClick={() => {
-                                void markPaid(suggestion);
-                              }}
+                          {member.isCreator && (
+                            <span
+                              className="group-member__badge"
+                              data-testid="member-creator-badge"
                             >
-                              Mark paid
-                            </button>
+                              Creator
+                            </span>
                           )}
+                        </span>
+                        <span className="group-member__detail">
+                          Joined {formatJoined(member.joinedAt)}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : activeTab === 'expenses' ? (
+            <div className="group-expenses">
+              {deleteError !== null && <p role="alert">{deleteError}</p>}
+              {loading ? (
+                <p className="muted">Loading expenses…</p>
+              ) : error === null ? (
+                expenses.length === 0 ? (
+                  <div className="group-empty" data-testid="expenses-empty">
+                    <span className="group-empty__icon" aria-hidden="true">
+                      <SparklesIcon />
+                    </span>
+                    <p className="group-empty__title">No expenses yet</p>
+                    <p className="group-empty__text">
+                      Add the first shared cost when the group is ready.
+                    </p>
+                    {groupId !== undefined && (
+                      <Link
+                        to={SPA_ROUTES.addExpense(groupId)}
+                        className="btn btn--secondary group-empty__action"
+                      >
+                        Add expense
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <ul className="group-expense-list" role="list" data-testid="expense-list">
+                    {expenses.map((expense) => (
+                      <li className="group-expense" key={expense.id} data-testid="expense-item">
+                        <span className="group-expense__icon" aria-hidden="true">
+                          <ReceiptIcon />
+                        </span>
+                        <div className="group-expense__details">
+                          <div className="group-expense__title-row">
+                            <span
+                              className="group-expense__description"
+                              data-testid="expense-description"
+                            >
+                              {expense.description}
+                            </span>
+                            {expense.editedAt !== undefined && (
+                              <span
+                                className="group-expense__badge"
+                                data-testid="expense-edited-at"
+                                title={`edited ${new Date(expense.editedAt).toLocaleString()}`}
+                              >
+                                Edited
+                              </span>
+                            )}
+                          </div>
+                          <p className="group-expense__meta">
+                            <span data-testid="expense-payer">
+                              Paid by {expense.payer.displayName}
+                            </span>
+                            <span aria-hidden="true"> · </span>
+                            <span data-testid="expense-participants">
+                              {expense.shares
+                                .map((share) => share.participant.displayName)
+                                .join(', ')}
+                            </span>
+                          </p>
+                          <p className="group-expense__timestamp">
+                            <time dateTime={expense.createdAt}>
+                              {new Date(expense.createdAt).toLocaleString()}
+                            </time>
+                            {expense.editedAt !== undefined && (
+                              <time
+                                className="group-expense__edited-time"
+                                dateTime={expense.editedAt}
+                              >
+                                {' '}
+                                · edited {new Date(expense.editedAt).toLocaleString()}
+                              </time>
+                            )}
+                          </p>
+                        </div>
+                        <div className="group-expense__amount-wrap">
+                          <span className="group-expense__amount" data-testid="expense-amount">
+                            {formatKurus(expense.amountKurus as Kurus)}
+                          </span>
+                          {groupId !== undefined &&
+                            user !== null &&
+                            expense.logger.id === user.id && (
+                              <span
+                                className="group-expense__actions"
+                                data-testid="expense-actions"
+                              >
+                                <Link
+                                  className="group-expense__edit"
+                                  to={SPA_ROUTES.editExpense(groupId, expense.id)}
+                                  data-testid="edit-expense-link"
+                                >
+                                  Edit
+                                </Link>
+                                <button
+                                  type="button"
+                                  className="group-expense__delete"
+                                  data-testid="delete-expense"
+                                  disabled={deletingId === expense.id}
+                                  onClick={() => {
+                                    void removeExpense(expense.id);
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </span>
+                            )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              ) : null}
+            </div>
+          ) : activeTab === 'balances' ? (
+            <div className="group-balances">
+              {financialError !== null && <p role="alert">{financialError}</p>}
+              {balancesLoading && balances === null ? (
+                <p className="muted">Loading balances…</p>
+              ) : balances === null ? null : (
+                <>
+                  <ul className="group-balance-list" role="list" data-testid="balance-list">
+                    {balances.balances.map((entry) => {
+                      const sign = balanceSign(entry.balanceKurus);
+                      const meaning =
+                        sign === 'positive'
+                          ? 'is owed money'
+                          : sign === 'negative'
+                            ? 'owes money'
+                            : 'settled';
+                      return (
+                        <li
+                          className={`group-balance group-balance--${sign}`}
+                          key={entry.member.id}
+                          data-testid="balance-item"
+                        >
+                          <span className="group-balance__member-wrap">
+                            <span
+                              className={`group-avatar group-avatar--sm group-avatar--c${String(avatarVariant(entry.member.displayName))}`}
+                              aria-hidden="true"
+                            >
+                              {avatarInitial(entry.member.displayName)}
+                            </span>
+                            <span className="group-balance__member" data-testid="balance-member">
+                              {entry.member.displayName}
+                            </span>
+                          </span>
+                          <span className="group-balance__value">
+                            <span className="group-balance__amount" data-testid="balance-amount">
+                              {formatSignedKurus(entry.balanceKurus)}
+                            </span>
+                            <span className="group-balance__meaning">{meaning}</span>
+                          </span>
                         </li>
                       );
                     })}
                   </ul>
-                )}
-              </section>
-
-              <section
-                className="group-settle-up__panel"
-                aria-labelledby="settle-up-settled-heading"
-              >
-                <h3 id="settle-up-settled-heading">Settled</h3>
-                {settleUp.settled.length === 0 ? (
-                  <p className="muted" data-testid="settled-empty">
-                    No settled payments yet.
+                  <p className="group-balance-sum" data-testid="balance-sum">
+                    Total: {formatSignedKurus(balances.sumKurus)}
                   </p>
-                ) : (
-                  <ul
-                    className="list group-settlement-list"
-                    role="list"
-                    data-testid="settled-list"
-                  >
-                    {settleUp.settled.map((settlement) => (
-                      <li
-                        className={`group-settlement group-settlement--${settlementStatus(settlement).toLowerCase()}`}
-                        key={settlement.id}
-                        data-testid="settled-item"
-                        data-status={settlementStatus(settlement)}
-                      >
-                        <span className="group-settlement__text" data-testid="settled-text">
-                          {paymentLabel(
-                            settlement.payer.displayName,
-                            settlement.recipient.displayName,
-                            settlement.amountKurus,
-                          )}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="group-settle-up">
+              {financialError !== null && <p role="alert">{financialError}</p>}
+              {settleUpLoading && settleUp === null ? (
+                <p className="muted">Loading settle-up…</p>
+              ) : settleUp === null ? null : (
+                <>
+                  <section className="group-settle-up__panel">
+                    <h3 id="settle-up-outstanding-heading">Outstanding</h3>
+                    {settleUp.outstanding.length === 0 ? (
+                      <div className="group-empty" data-testid="outstanding-empty">
+                        <span className="group-empty__icon" aria-hidden="true">
+                          <SparklesIcon />
                         </span>
-                        {settlementStatus(settlement) === 'UNDONE' && (
-                          <span className="group-settlement__badge" data-testid="settled-undone">
-                            Undone
-                          </span>
-                        )}
-                        {settlementStatus(settlement) === 'SETTLED' &&
-                          isSuggestionParty(settlement, user?.id) && (
-                            <button
-                              type="button"
-                              className="btn group-settlement__action"
-                              data-testid="undo-settlement"
-                              disabled={mutatingKey === settlement.id}
-                              onClick={() => {
-                                void undoSettlement(settlement.id);
-                              }}
+                        <p className="group-empty__title">Everyone is settled</p>
+                        <p className="group-empty__text">
+                          There are no suggested payments right now.
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="group-settlement-list" role="list" data-testid="outstanding-list">
+                        {settleUp.outstanding.map((suggestion) => {
+                          const key = `${suggestion.payer.id}:${suggestion.recipient.id}:${String(suggestion.amountKurus)}`;
+                          return (
+                            <li
+                              className="group-settlement"
+                              key={key}
+                              data-testid="outstanding-item"
                             >
-                              Undo
-                            </button>
-                          )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            </>
+                              <span className="group-settlement__icon" aria-hidden="true">
+                                <ArrowRightIcon />
+                              </span>
+                              <span
+                                className="group-settlement__text"
+                                data-testid="outstanding-text"
+                              >
+                                {paymentLabel(
+                                  suggestion.payer.displayName,
+                                  suggestion.recipient.displayName,
+                                  suggestion.amountKurus,
+                                )}
+                              </span>
+                              {isSuggestionParty(suggestion, user?.id) && (
+                                <button
+                                  type="button"
+                                  className="btn btn--secondary group-settlement__action"
+                                  data-testid="mark-paid"
+                                  disabled={mutatingKey === key}
+                                  onClick={() => {
+                                    void markPaid(suggestion);
+                                  }}
+                                >
+                                  Mark paid
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
+
+                  <p className="group-settle-up__hint">
+                    <InfoIcon />
+                    Mark paid appears only when you are the payer or recipient.
+                  </p>
+
+                  <section className="group-settle-up__panel">
+                    <h3 id="settle-up-settled-heading">Settled</h3>
+                    {settleUp.settled.length === 0 ? (
+                      <p className="muted" data-testid="settled-empty">
+                        No settled payments yet.
+                      </p>
+                    ) : (
+                      <ul className="group-settlement-list" role="list" data-testid="settled-list">
+                        {settleUp.settled.map((settlement) => {
+                          const status = settlementStatus(settlement);
+                          return (
+                            <li
+                              className={`group-settlement group-settlement--${status.toLowerCase()}`}
+                              key={settlement.id}
+                              data-testid="settled-item"
+                              data-status={status}
+                            >
+                              <span className="group-settlement__icon" aria-hidden="true">
+                                {status === 'SETTLED' ? <CheckIcon /> : <ArrowRightIcon />}
+                              </span>
+                              <span className="group-settlement__text" data-testid="settled-text">
+                                {paymentLabel(
+                                  settlement.payer.displayName,
+                                  settlement.recipient.displayName,
+                                  settlement.amountKurus,
+                                )}
+                              </span>
+                              {status === 'UNDONE' ? (
+                                <span
+                                  className="group-settlement__badge group-settlement__badge--undone"
+                                  data-testid="settled-undone"
+                                >
+                                  Undone
+                                </span>
+                              ) : (
+                                <span className="group-settlement__badge group-settlement__badge--paid">
+                                  Paid
+                                </span>
+                              )}
+                              {status === 'SETTLED' && isSuggestionParty(settlement, user?.id) && (
+                                <button
+                                  type="button"
+                                  className="btn btn--secondary group-settlement__action"
+                                  data-testid="undo-settlement"
+                                  disabled={mutatingKey === settlement.id}
+                                  onClick={() => {
+                                    void undoSettlement(settlement.id);
+                                  }}
+                                >
+                                  Undo
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
+                </>
+              )}
+            </div>
           )}
-        </div>
-      )}
-      </section>
+        </section>
+      </div>
 
       {isCreator && (
-        <section id="join-requests" className="group-join-requests" aria-labelledby="join-requests-heading">
-          <h2 id="join-requests-heading">Join requests</h2>
+        <section
+          id="join-requests"
+          className="group-join-requests"
+          aria-labelledby="join-requests-heading"
+        >
+          <div className="group-join-requests__head">
+            <h2 id="join-requests-heading">Join requests</h2>
+            <span className="group-join-requests__badge">Creator only</span>
+          </div>
           {requestsError !== null && <p role="alert">{requestsError}</p>}
           {requestsLoading ? (
             <p className="muted">Loading join requests…</p>
           ) : requests.length === 0 ? (
-            <p className="muted" data-testid="join-requests-empty">
-              No pending join requests.
-            </p>
+            <div className="group-empty" data-testid="join-requests-empty">
+              <span className="group-empty__icon" aria-hidden="true">
+                <SparklesIcon />
+              </span>
+              <p className="group-empty__title">No pending requests</p>
+              <p className="group-empty__text">
+                New requests will appear here for the creator.
+              </p>
+            </div>
           ) : (
-            <ul className="list group-join-request-list" role="list" data-testid="join-request-list">
+            <ul className="group-join-request-list" role="list" data-testid="join-request-list">
               {requests.map((request) => (
                 <li className="group-join-request" key={request.id} data-testid="join-request-item">
-                  <span className="group-join-request__name">{request.requester.displayName}</span>
-                  <span className="group-join-request__actions">
+                  <div className="group-join-request__person">
+                    <span
+                      className={`group-avatar group-avatar--sm group-avatar--c${String(avatarVariant(request.requester.displayName))}`}
+                      aria-hidden="true"
+                    >
+                      {avatarInitial(request.requester.displayName)}
+                    </span>
+                    <span className="group-join-request__name">
+                      {request.requester.displayName} wants to join
+                    </span>
+                  </div>
+                  <div className="group-join-request__actions">
                     <button
                       type="button"
                       className="btn group-join-request__approve"
@@ -734,7 +1007,7 @@ export function GroupViewPage() {
                     >
                       Reject
                     </button>
-                  </span>
+                  </div>
                 </li>
               ))}
             </ul>

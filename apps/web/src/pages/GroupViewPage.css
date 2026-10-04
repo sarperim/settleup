@@ -1,217 +1,627 @@
 /**
- * Group view page styles (TKT-ui-004; extended by TKT-ui-005, TKT-ui-006) —
- * colocated with `GroupViewPage.tsx`.
+ * `/groups/:groupId` group-view styles (TKT-ui-004; extended by TKT-ui-005,
+ * TKT-ui-006; 1:1 restyle TKT-ui-016) — colocated with `GroupViewPage.tsx`.
  *
- * TKT-ui-004 owns the page shell + Expenses section of PG-006: the header region
- * (group name and the creator-only join code with its copy affordance), the
- * section navigation, and the group ledger. TKT-ui-005 adds the **Balances** and
- * **Settle-up** sections in the same file; TKT-ui-006 owns the members /
- * join-requests regions.
+ * PG-006 presentation only. Geometry is pinned to board 05 "Group View"
+ * (file key `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:24555`, mobile layout
+ * `2:24878`). The reference is a state catalog — it lays the four tab states
+ * out side by side (Expenses card; Balances + Settle-up cards; Members card
+ * with the join-requests panel). The page renders the same card language one
+ * tab at a time (the frozen PG-006 scaffold), so this sheet styles:
  *
- * All colour/type values resolve through `tokens.css` custom properties; no
- * colour or font value is hard-coded here (TKT-ui-001 styling convention).
+ *   - header: breadcrumb + 30px display title + 15px muted meta, and the
+ *     creator-only join-code card (sunken 18px-radius card, 12/700 tracked
+ *     label, 22px tracked code, 44px copy control) — desktop 315px wide,
+ *     stacked full-width on mobile;
+ *   - the section panel: raised card (18px radius, 8/24 shadow, 22/16px
+ *     padding), a sunken pill tab strip (12px radius, 5px inset) whose active
+ *     tab is a raised 8px-radius pill in the strong accent;
+ *   - section head: 22px display title with a 13px muted count/hint and a
+ *     44px primary "Add expense" action;
+ *   - expense rows: 38px soft-accent category tile, 15px display description,
+ *     13px muted payer/participants, 11px timestamp, 17px amount and the
+ *     logger-only Edit/Delete text actions;
+ *   - balances: 57px signed rows (green/red/neutral sunken, 12px radius) with
+ *     28px avatars, 15px amounts and an 11px meaning line, plus the visible
+ *     zero-sum total;
+ *   - settle-up: outstanding/settled pay lines with 30px status icons, party
+ *     actions, and Paid/Undone pills;
+ *   - members: 32px avatars with the Creator pill;
+ *   - join requests: a sunken panel of raised request cards with the
+ *     creator-only Approve/Reject pair;
+ *   - the shared empty state: sunken 12px panel, 38px soft-accent icon, 17px
+ *     display title, 13px muted body and a 44px secondary action.
+ *
+ * All colour/radius/shadow values resolve through `styles/tokens.css` custom
+ * properties; no colour value is hard-coded here (TKT-ui-001 styling
+ * convention, asserted by `styles/design-tokens.spec.ts`). The reference's
+ * exact type/spacing values have no token in the frozen token layer (the
+ * reference family/type swap is an accepted deviation — owner waiver of
+ * TKT-ui-010 E1), so the page-local sizes below encode the reference geometry
+ * directly. Artifact-level deviations (the 960px app-shell content column, the
+ * symbol-less `formatKurus`, the reference-only "Group total" label) are
+ * flagged on the ticket rather than fixed here.
  */
 
 .group-view {
   display: grid;
-  gap: var(--space-5);
+  gap: 1.25rem; /* 20px — reference workspace rhythm */
+  min-width: 0;
 }
 
 /* ── Header region ───────────────────────────────────────────────────────── */
 
 .group-header {
+  display: grid;
+  gap: 1rem; /* 16px — reference group-header gap */
+}
+
+.group-identity {
+  display: grid;
+  gap: 0.3125rem; /* 5px — breadcrumb/heading gap */
+  min-width: 0;
+}
+
+.group-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem; /* 6px */
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1rem;
+}
+
+.group-breadcrumb a {
+  color: var(--color-accent-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.group-breadcrumb a:hover {
+  color: var(--color-accent-strong-hover);
+}
+
+.group-breadcrumb__sep,
+.group-breadcrumb__current {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-identity__title {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — reference page title */
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.group-identity__meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5;
+}
+
+/* The creator-only join-code card. */
+.group-join-code {
+  display: grid;
+  gap: 0.5rem; /* 8px */
+  padding: 0.875rem; /* 14px */
+  background-color: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.group-join-code__label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 0.9375rem;
+  text-transform: uppercase;
+}
+
+.group-join-code__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3) var(--space-5);
+  gap: 0.5rem;
 }
 
-.group-header h1 {
-  margin-bottom: 0;
-}
-
-.group-join-code {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
-}
-
+/* Reset the global `code` chip — the reference renders a bare 22px code. */
 .group-join-code__value {
-  margin: 0;
+  padding: 0;
+  color: var(--color-nav-text);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 1.375rem; /* 22px */
+  font-weight: 700;
+  letter-spacing: 0.125em; /* 2px */
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .group-join-code__copy {
-  padding-block: var(--space-1);
-}
-
-.group-join-code__status {
-  font-size: var(--font-size-sm);
-}
-
-/* ── Section navigation ──────────────────────────────────────────────────── */
-
-.group-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* ── Section content ─────────────────────────────────────────────────────── */
-
-.group-section {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.group-expenses,
-.group-expense-list {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.group-expenses__toolbar {
-  margin-bottom: 0;
-}
-
-.group-expense {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-1) var(--space-4);
-}
-
-.group-expense__description {
-  font-weight: var(--font-weight-medium);
-}
-
-.group-expense__amount {
-  justify-self: end;
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-bold);
-}
-
-.group-expense__payer,
-.group-expense__participants,
-.group-expense__timestamp {
-  font-size: var(--font-size-sm);
-}
-
-.group-expense__actions {
-  gap: var(--space-3);
-  grid-column: 1 / -1;
-}
-
-/*
- * Re-assert the danger background on hover: `base.css` `.btn:hover:not(:disabled)`
- * is more specific than `.btn--danger`, so a composed `btn btn--danger` would
- * flip back to the accent colour on hover (TKT-ui-001 review N1 — first
- * consumer re-asserts it here).
- */
-.group-expense__delete.btn--danger:hover:not(:disabled) {
-  background-color: var(--color-danger);
-  border-color: var(--color-danger);
-  filter: brightness(0.94);
-}
-
-/* ── Balances section (TKT-ui-005) ───────────────────────────────────────── */
-
-.group-balances {
-  display: grid;
-  gap: var(--space-4);
-}
-
-.group-balance-list {
-  margin-bottom: 0;
-}
-
-/* One member per row: name on the left, signed amount on the right. */
-.group-balance {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3) var(--space-4);
-}
-
-.group-balance__member {
-  font-weight: var(--font-weight-medium);
-}
-
-.group-balance__amount {
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-bold);
-}
-
-/* A redundant colour cue for the sign: owed reads as success, owing as danger.
- * The amount always carries its explicit sign, so colour is never the only
- * signal (the zero state stays neutral). */
-.group-balance--positive .group-balance__amount {
-  color: var(--color-success);
-}
-
-.group-balance--negative .group-balance__amount {
-  color: var(--color-danger);
-}
-
-/* The visible zero-sum total — set apart from the rows it sums. */
-.group-balance-sum {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  color: var(--color-text);
-  background-color: var(--color-surface-sunken);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-md);
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--font-weight-bold);
-  text-align: right;
-}
-
-/* ── Settle-up section (TKT-ui-005) ──────────────────────────────────────── */
-
-.group-settle-up {
-  display: grid;
-  gap: var(--space-4);
-}
-
-/* Outstanding and Settled read as two peer panels of one section. */
-.group-settle-up__panel {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.group-settle-up__panel h3 {
-  margin-bottom: 0;
-}
-
-.group-settlement-list {
-  margin-bottom: 0;
-}
-
-/* A payment line: the sentence on the left, the party-only action on the right. */
-.group-settlement {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-4);
-}
-
-.group-settlement__text {
-  font-weight: var(--font-weight-medium);
-}
-
-.group-settlement__action {
   flex: none;
 }
 
+.group-join-code__status {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1rem;
+}
+
+/* ── Section panel (tabs + active region) ────────────────────────────────── */
+
+.group-panel {
+  display: grid;
+  gap: 0.9375rem; /* 15px — reference card child rhythm */
+  padding: 1rem; /* 16px — reference mobile card padding */
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  min-width: 0;
+}
+
+.group-tabs {
+  display: flex;
+  gap: 0.25rem; /* 4px — reference mobile tab gap */
+  padding: 0.3125rem; /* 5px */
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.group-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 2.0625rem; /* 33px — reference mobile tab height */
+  min-height: 0;
+  padding: 0.5rem 0.625rem; /* 8px 10px */
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 500;
+  line-height: 0.9375rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.group-tab:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: transparent;
+}
+
+.group-tab[aria-pressed='true'] {
+  color: var(--color-accent-strong);
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-border);
+  font-weight: 700;
+}
+
+.group-tab[aria-pressed='true']:hover:not(:disabled) {
+  color: var(--color-accent-strong);
+  background-color: var(--color-surface-raised);
+}
+
+.group-section {
+  display: grid;
+  gap: 0.9375rem; /* 15px */
+  min-width: 0;
+}
+
+.group-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.group-section__title {
+  display: grid;
+  gap: 0.125rem; /* 2px */
+  min-width: 0;
+}
+
+.group-section__title h2 {
+  margin: 0;
+  font-size: 1.375rem; /* 22px — reference section title */
+  line-height: 1.36;
+}
+
+.group-section__count,
+.group-section__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+}
+
+.group-section__action {
+  flex: none;
+  height: 2.75rem; /* 44px */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* ── Shared empty state ──────────────────────────────────────────────────── */
+
+.group-empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.625rem; /* 10px */
+  padding: 1.5rem 1.25rem; /* 24px 20px */
+  text-align: center;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.group-empty__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.375rem; /* 38px */
+  height: 2.375rem;
+  color: var(--color-accent-strong);
+  background-color: var(--color-accent-soft);
+  border-radius: var(--radius-pill);
+}
+
+.group-empty__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.0625rem; /* 17px */
+  font-weight: 700;
+  line-height: 1.36;
+}
+
+.group-empty__text {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+}
+
+.group-empty__action {
+  height: 2.75rem; /* 44px */
+  min-height: 2.75rem;
+  padding: 0 1.125rem;
+  font-size: 0.8125rem;
+}
+
+/* ── Expenses section ────────────────────────────────────────────────────── */
+
+.group-expenses {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.group-expense-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group-expense {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.875rem; /* 14px */
+  padding: 0.875rem 0; /* 14px */
+  background: none;
+  border-radius: 0;
+  min-width: 0;
+}
+
+.group-expense + .group-expense {
+  border-top: 1px solid var(--color-border);
+}
+
+.group-expense__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.375rem; /* 38px */
+  height: 2.375rem;
+  color: var(--color-accent-strong);
+  background-color: var(--color-accent-soft);
+  border-radius: var(--radius-md);
+}
+
+.group-expense__details {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.3125rem; /* 5px */
+  min-width: 0;
+}
+
+.group-expense__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem; /* 8px */
+  min-width: 0;
+}
+
+.group-expense__description {
+  font-family: var(--font-display);
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 700;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+}
+
+.group-expense__badge {
+  flex: none;
+  padding: 0.25rem 0.5625rem; /* 4px 9px */
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  line-height: 0.8125rem;
+}
+
+.group-expense__meta,
+.group-expense__timestamp {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.group-expense__meta {
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1rem;
+}
+
+.group-expense__timestamp {
+  font-size: 0.6875rem; /* 11px */
+  line-height: 0.8125rem;
+}
+
+.group-expense__amount-wrap {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  gap: 0.3125rem; /* 5px */
+  margin-left: auto;
+  text-align: right;
+}
+
+.group-expense__amount {
+  font-size: 1.0625rem; /* 17px */
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.group-expense__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem; /* 10px */
+}
+
+.group-expense__edit {
+  color: var(--color-accent-strong);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.group-expense__edit:hover {
+  color: var(--color-accent-strong-hover);
+  text-decoration: underline;
+}
+
+/* Logger-only delete: reset the global primary-button chrome to a bare
+ * danger text action (the reference draws it as a 12/700 link). */
+.group-expense__delete {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  color: var(--color-danger);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.group-expense__delete:hover:not(:disabled) {
+  color: var(--color-danger);
+  background: none;
+  text-decoration: underline;
+  filter: none;
+}
+
+/* ── Balances section ────────────────────────────────────────────────────── */
+
+.group-balances {
+  display: grid;
+  gap: 0.75rem; /* 12px */
+  min-width: 0;
+}
+
+.group-balance-list {
+  display: grid;
+  gap: 0.5rem; /* 8px */
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Neutral (settled) row; the sign modifiers re-tint it below. The amount
+ * always carries its explicit sign, so the tint is a redundant cue only. */
+.group-balance {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem; /* 12px */
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.group-balance--positive {
+  color: var(--color-success-strong);
+  background-color: var(--color-success-soft);
+}
+
+.group-balance--negative {
+  color: var(--color-danger-strong);
+  background-color: var(--color-danger-soft);
+}
+
+.group-balance__member-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5625rem; /* 9px */
+  min-width: 0;
+}
+
+.group-balance__member {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-balance__value {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  gap: 0.125rem; /* 2px */
+  text-align: right;
+}
+
+.group-balance__amount {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.group-balance__meaning {
+  font-size: 0.6875rem; /* 11px */
+  line-height: 0.8125rem;
+  white-space: nowrap;
+}
+
+.group-balance-sum {
+  margin: 0;
+  padding-top: 0.4375rem; /* 7px */
+  color: var(--color-success);
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Settle-up section ───────────────────────────────────────────────────── */
+
+.group-settle-up {
+  display: grid;
+  gap: 1rem; /* 16px */
+  min-width: 0;
+}
+
+.group-settle-up__panel {
+  display: grid;
+  gap: 0.75rem; /* 12px */
+  min-width: 0;
+}
+
+.group-settle-up__panel h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.0625rem; /* 17px */
+  font-weight: 700;
+  line-height: 1.36;
+}
+
+.group-settlement-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group-settlement {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.75rem; /* 12px */
+  padding: 0.6875rem 0; /* 11px */
+  background: none;
+  border-radius: 0;
+  min-width: 0;
+}
+
+.group-settlement + .group-settlement {
+  border-top: 1px solid var(--color-border);
+}
+
+.group-settlement__icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem; /* 30px */
+  height: 1.875rem;
+  color: var(--color-accent-strong);
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-pill);
+}
+
+.group-settlement--settled .group-settlement__icon {
+  color: var(--color-success);
+  background-color: var(--color-success-soft);
+}
+
+.group-settlement__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 /* Settled facts read quieter than live suggestions; an undone one is struck
- * through and carries the explicit "Undone" label. */
+ * through and carries the explicit "Undone" pill. */
 .group-settlement--settled .group-settlement__text,
 .group-settlement--undone .group-settlement__text {
   color: var(--color-text-muted);
@@ -222,87 +632,291 @@
 }
 
 .group-settlement__badge {
-  padding: var(--space-1) var(--space-3);
-  color: var(--color-danger);
-  background-color: var(--color-danger-soft);
-  border: 1px solid var(--color-danger);
+  flex: none;
+  padding: 0.25rem 0.5625rem; /* 4px 9px */
+  border: 1px solid transparent;
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  line-height: 0.8125rem;
+  white-space: nowrap;
 }
 
-/* ── Members section (TKT-ui-006) ────────────────────────────────────────── */
+.group-settlement__badge--paid {
+  color: var(--color-success);
+  background-color: var(--color-success-soft);
+}
+
+.group-settlement__badge--undone {
+  color: var(--color-warning);
+  background-color: var(--color-warning-soft);
+}
+
+.group-settlement__action {
+  flex: none;
+  height: 2.75rem; /* 44px */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* The party-only affordance note (reference's "Mark paid appears only…"). */
+.group-settle-up__hint {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem; /* 10px */
+  margin: 0;
+  padding: 0.75rem; /* 12px */
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
+  border: 1px solid color-mix(in srgb, var(--color-nav-text) 25%, transparent);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+}
+
+.group-settle-up__hint svg {
+  flex: none;
+}
+
+/* ── Members section ─────────────────────────────────────────────────────── */
 
 .group-members {
   display: grid;
-  gap: var(--space-3);
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .group-member-list {
-  margin-bottom: 0;
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* One member per row: display name on the left, creator marker on the right. */
 .group-member {
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.625rem; /* 10px */
+  padding: 0.5625rem 0; /* 9px */
+  background: none;
+  border-radius: 0;
+  min-width: 0;
+}
+
+.group-member__info {
+  display: grid;
+  gap: 0.125rem; /* 2px */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.group-member__name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4375rem; /* 7px */
+  min-width: 0;
 }
 
 .group-member__name {
-  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* The creator marker — the member the group's gatekeeping belongs to. */
+.group-member__detail {
+  color: var(--color-text-muted);
+  font-size: 0.6875rem; /* 11px */
+  line-height: 0.8125rem;
+}
+
 .group-member__badge {
-  padding: var(--space-1) var(--space-3);
-  color: var(--color-accent-contrast);
+  flex: none;
+  padding: 0.25rem 0.5625rem; /* 4px 9px */
+  color: var(--color-nav-text);
   background-color: var(--color-accent-soft);
-  border: 1px solid var(--color-accent-strong);
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.04em;
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  line-height: 0.8125rem;
 }
 
-/* ── Join-requests region (TKT-ui-006) ───────────────────────────────────── */
+/* ── Join-requests region (creator only) ─────────────────────────────────── */
 
-/* Creator-only gatekeeping, set apart from the tabbed sections as a panel. */
 .group-join-requests {
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-5);
-  background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  gap: 0.625rem; /* 10px */
+  padding: 1rem; /* 16px */
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+  min-width: 0;
 }
 
-.group-join-requests h2 {
-  margin-bottom: 0;
+.group-join-requests__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.group-join-requests__head h2 {
+  margin: 0;
+  font-size: 1.0625rem; /* 17px */
+  line-height: 1.36;
+}
+
+.group-join-requests__badge {
+  flex: none;
+  padding: 0.25rem 0.5625rem; /* 4px 9px */
+  color: var(--color-nav-text);
+  background-color: var(--color-accent-soft);
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  line-height: 0.8125rem;
+  white-space: nowrap;
 }
 
 .group-join-request-list {
-  margin-bottom: 0;
+  display: grid;
+  gap: 0.625rem; /* 10px */
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-/* One request per row: requester's display name left, decisions right. */
 .group-join-request {
+  display: grid;
+  gap: 0.625rem; /* 10px */
+  padding: 0.75rem; /* 12px */
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.group-join-request__person {
+  display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.5rem; /* 8px */
+  min-width: 0;
 }
 
 .group-join-request__name {
-  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .group-join-request__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-left: auto;
+  gap: 0.5rem; /* 8px */
 }
 
 .group-join-request__actions .btn {
   flex: none;
+  height: 2.75rem; /* 44px */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+/* ── Decorative per-member avatar ────────────────────────────────────────── */
+
+/*
+ * The reference paints each member a distinct hue, but the frozen token layer
+ * carries no avatar palette, so the six deterministic variants reuse existing
+ * semantic/accent tokens (decorative only — the initial always carries the
+ * identity). TKT-ui-016.
+ */
+.group-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-accent);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.group-avatar--sm {
+  width: 1.75rem; /* 28px */
+  height: 1.75rem;
+  font-size: 0.6875rem; /* 11px */
+}
+
+.group-avatar--md {
+  width: 2rem; /* 32px */
+  height: 2rem;
+  font-size: 0.75rem; /* 12px */
+}
+
+.group-avatar--c0 {
+  background-color: var(--color-accent);
+}
+
+.group-avatar--c1 {
+  background-color: var(--color-accent-strong);
+}
+
+.group-avatar--c2 {
+  background-color: var(--color-success);
+}
+
+.group-avatar--c3 {
+  background-color: var(--color-warning);
+}
+
+.group-avatar--c4 {
+  background-color: var(--color-danger);
+}
+
+.group-avatar--c5 {
+  background-color: var(--color-nav-text);
+}
+
+/* ── Desktop reference proportions (acceptance viewport: 1230px) ─────────── */
+
+@media (min-width: 48rem) {
+  .group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .group-identity {
+    flex: 1 1 auto;
+  }
+
+  .group-join-code {
+    flex: none;
+    width: 19.6875rem; /* 315px — reference join-code card */
+  }
+
+  .group-panel {
+    padding: 1.375rem; /* 22px — reference desktop card padding */
+  }
+
+  .group-tabs {
+    gap: 0.5rem; /* 8px */
+  }
+
+  .group-tab {
+    height: 2.125rem; /* 34px — reference desktop tab height */
+    padding: 0.5rem 1rem; /* 8px 16px */
+    font-size: 0.8125rem; /* 13px */
+    line-height: 1rem;
+  }
 }
