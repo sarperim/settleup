@@ -1,6 +1,6 @@
 # TKT-ui-019: Join by code — 1:1 restyle (PG-009)
 
-- Status: todo
+- Status: in-progress
 - Size: S
 - Scope:
   - Modify: `apps/web/src/pages/JoinPage.tsx` + colocated `JoinPage.css`

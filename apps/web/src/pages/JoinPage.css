@@ -1,54 +1,211 @@
 /**
- * `/join/:code` page styles (TKT-ui-009) — colocated with `JoinPage.tsx`.
+ * `/join/:code` page styles (TKT-ui-009; 1:1 restyle TKT-ui-019) — colocated
+ * with `JoinPage.tsx`.
  *
- * PG-009: a single confirmation card. The code holder learns the group's
- * **name and nothing else** (FR-GRP-004), so the name is the one piece of
- * group detail the page renders and it carries the visual weight. The confirm
- * action sits below it; every non-happy state (request pending, already a
- * member, code not found, re-request after rejection) reuses the same card.
+ * PG-009 presentation only: a centered raised card carrying the private-preview
+ * chip, the group's **name** (nothing else — FR-GRP-004, so the name is the one
+ * piece of group detail the page renders and it carries the visual weight), a
+ * state alert and the confirm action, with the privacy note beneath the card
+ * (the iteration-3 design-pinned addition, board 08).
  *
- * All colour/type values resolve through `tokens.css` custom properties — no
- * hard-coded colour or font values outside the token layer.
+ * Geometry is pinned to board 08 "Join by Code" (file key
+ * `XzY4HLCoW70yfI9NgeLXqC`; desktop content `2:26008`, mobile layout `2:26087`):
+ * a 460px card with a 28px inner padding on desktop (20px on mobile), an 18px
+ * child rhythm, a 58px preview chip, a 30px name, 13px alert/note text and a
+ * 44px action. This is the login/register card language, reconciled against
+ * board 08's own card width and content rectangles.
+ *
+ * All colour/type/radius values resolve through `styles/tokens.css` custom
+ * properties — no hard-coded colour or font value outside the token layer
+ * (enforced by `styles/design-tokens.spec.ts`). Nothing here changes the
+ * page's structure, labels, roles, testids or copy.
  */
 
 .join-page {
-  max-width: 32rem;
-  margin: var(--space-5) auto 0;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem; /* 12px — board 08 card/note spacing */
+  padding-block: 1.5rem; /* 24px — board 08 mobile content padding */
+  /* Board 08's mobile content gutter is 20px; the shell already supplies 24px
+   * (`--layout-gutter`), so reclaim the 4px difference to keep the card at the
+   * reference's 350px width at the 390px acceptance viewport. */
+  margin-inline: -0.25rem;
 }
 
-.join-page__lede {
-  margin-bottom: var(--space-5);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-lg);
-}
-
-/* The group name — the only group detail shown before confirming. */
-.join-page__name {
-  display: block;
-  margin-top: var(--space-2);
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  line-height: 1.2;
-}
-
-.join-page__state {
-  margin: 0;
+.join-card {
+  display: grid;
+  gap: 1.125rem; /* 18px — board 08 card child rhythm */
+  width: 100%;
+  max-width: 28.75rem; /* 460px — board 08 desktop card width */
+  padding: 1.25rem; /* 20px — board 08 mobile card padding */
   text-align: left;
 }
 
-.join-page__state + .join-page__state {
-  margin-top: var(--space-4);
-}
-
-.join-page__actions {
+/* The private-preview chip — the card holds no group detail beyond the name. */
+.join-card__preview {
   display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: var(--space-4);
+  width: 3.625rem; /* 58px */
+  height: 3.625rem; /* 58px */
+  color: var(--color-accent-strong);
+  background-color: var(--color-accent-soft);
+  border-radius: var(--radius-pill);
 }
 
-.join-page__actions button {
-  min-width: 12rem;
+.join-card__preview svg {
+  width: 1.625rem; /* 26px */
+  height: 1.625rem;
+}
+
+.join-card__heading {
+  display: grid;
+  gap: 0.375rem; /* 6px — board 08 title/description gap */
+}
+
+.join-card__title {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — board 08 name */
+  line-height: 1.18;
+}
+
+.join-card__description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5;
+}
+
+/* ── State alerts (board 08's status families) ───────────────────────────── */
+
+.join-card__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem; /* 10px — board 08 alert icon/message gap */
+  padding: 0.75rem; /* 12px */
+  border: 0;
+  border-radius: var(--radius-md);
+}
+
+.join-card__alert--info {
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
+}
+
+.join-card__alert--warning {
+  color: var(--color-warning);
+  background-color: var(--color-warning-soft);
+}
+
+.join-card__alert--success {
+  color: var(--color-success);
+  background-color: var(--color-success-soft);
+}
+
+.join-card__alert--danger {
+  color: var(--color-danger);
+  background-color: var(--color-danger-soft);
+}
+
+.join-card__alert-icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.join-card__alert-icon svg {
+  width: 1.0625rem; /* 17px */
+  height: 1.0625rem;
+}
+
+.join-card__alert-message {
+  display: grid;
+  gap: 0.125rem; /* 2px — board 08 alert title/description gap */
+}
+
+.join-card__alert-title {
+  margin: 0;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: var(--font-weight-bold);
+  line-height: 1.21;
+}
+
+.join-card__alert-text {
+  margin: 0;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4;
+}
+
+/* An inline `role="alert"` message sits inside the themed alert box: drop the
+ * shared alert chrome so the box is the only visual boundary. */
+.join-card__alert [role='alert'] {
+  padding: 0;
+  color: inherit;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+
+.join-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 2.75rem; /* 44px */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.join-card__action--primary {
+  color: var(--color-on-accent);
+  background-color: var(--color-accent-strong);
+  border: 1px solid var(--color-accent-strong);
+}
+
+.join-card__action--primary:hover:not(:disabled) {
+  background-color: var(--color-accent-strong-hover);
+}
+
+.join-card__action--secondary {
+  width: auto;
+  justify-self: start; /* hug the label — board 08's secondary actions */
+  color: var(--color-nav-text);
+  background-color: var(--color-surface-sunken);
+  border: 1px solid transparent;
+}
+
+.join-card__action--secondary:hover {
+  color: var(--color-nav-text);
+  background-color: var(--color-accent-soft);
+}
+
+/* ── Privacy note (PG-009 iteration-3 addition) ──────────────────────────── */
+
+.join-page__privacy {
+  width: 100%;
+  max-width: 28.75rem; /* matches the card edge */
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.45;
+}
+
+/* Desktop reference proportions (acceptance viewport: 1230px). */
+@media (min-width: 48rem) {
+  .join-page {
+    padding-block: 3.125rem; /* 50px — board 08 desktop content padding */
+    margin-inline: 0;
+  }
+
+  .join-card {
+    padding: 1.75rem; /* 28px — board 08 desktop card padding */
+  }
 }
