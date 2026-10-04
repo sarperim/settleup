@@ -1,6 +1,7 @@
 # TKT-ui-017: Add expense — 1:1 restyle (PG-007)
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/58
 - Size: M
 - Scope:
   - Modify: `apps/web/src/pages/AddExpensePage.tsx` + colocated `AddExpensePage.css`
