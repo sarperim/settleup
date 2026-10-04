@@ -5,6 +5,12 @@
  * Posts `POST /api/auth/password`; on success shows a confirmation (the acting
  * session survives — D-ARCH-002). Wrong current password / policy violations
  * render the §4 envelope's `message` and keep the form on screen.
+ *
+ * Structure is frozen by PG-004; the TKT-ui-014 restyle only regroups the fields
+ * into the reference's label/control rhythm. No labels, roles, testids or copy
+ * change (the frozen `<h1>Change password</h1>`, the two labels, the submit and
+ * the success string are kept; the reference's card subtitle and new-password
+ * hint are routed back rather than silently adopted).
  */
 
 import { useState, type FormEvent } from 'react';
@@ -58,31 +64,35 @@ export function ChangePasswordPage() {
         )}
         {error !== null && <p role="alert">{error}</p>}
         <form onSubmit={onSubmit} noValidate>
-          <label htmlFor="change-current-password">Current password</label>
-          <input
-            id="change-current-password"
-            name="currentPassword"
-            type="password"
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(event) => {
-              setCurrentPassword(event.target.value);
-            }}
-          />
+          <div className="change-password-field">
+            <label htmlFor="change-current-password">Current password</label>
+            <input
+              id="change-current-password"
+              name="currentPassword"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => {
+                setCurrentPassword(event.target.value);
+              }}
+            />
+          </div>
 
-          <label htmlFor="change-new-password">New password</label>
-          <input
-            id="change-new-password"
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            minLength={FIELD_LIMITS.password.minLength}
-            maxLength={FIELD_LIMITS.password.maxLength}
-            value={newPassword}
-            onChange={(event) => {
-              setNewPassword(event.target.value);
-            }}
-          />
+          <div className="change-password-field">
+            <label htmlFor="change-new-password">New password</label>
+            <input
+              id="change-new-password"
+              name="newPassword"
+              type="password"
+              autoComplete="new-password"
+              minLength={FIELD_LIMITS.password.minLength}
+              maxLength={FIELD_LIMITS.password.maxLength}
+              value={newPassword}
+              onChange={(event) => {
+                setNewPassword(event.target.value);
+              }}
+            />
+          </div>
 
           <button type="submit" disabled={submitting}>
             Change password
