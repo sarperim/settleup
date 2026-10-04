@@ -1,162 +1,498 @@
 /**
- * Edit-expense page styles (TKT-ui-008) — colocated with `EditExpensePage.tsx`.
+ * Edit-expense page styles (TKT-ui-008; 1:1 restyle TKT-ui-018) — colocated with
+ * `EditExpensePage.tsx`.
  *
- * PG-008 is the PG-007 form prefilled with the stored expense: the same
- * **single screen**, description/amount/payer fields, segmented split type,
- * participant chips and exact-amount rows — so this stylesheet mirrors the
- * add-expense sibling class for class, consuming the TKT-ui-001 design
- * direction through `tokens.css` custom properties only (no hard-coded
- * colour or type values). It is presentation only: no wizard steps, no focus
+ * PG-008 is the PG-007 form prefilled with the stored expense, so this
+ * stylesheet mirrors the add-expense sibling class for class — consuming the
+ * TKT-ui-001 design direction through `tokens.css` custom properties only (no
+ * hard-coded colour or type values outside this file's pinned reference
+ * geometry). The two form pages are verified as a pair.
+ *
+ * Geometry is pinned to the board-07 "Edit Expense" reference (file key
+ * `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:25593`, mobile layout `2:25793`):
+ * a 568px card (18px radius, 26px padding on desktop / 18px on mobile), an 18px
+ * child rhythm, a 30px heading, 13px labels, 46px controls, a 300px segmented
+ * split toggle, a 3-up / stacked core-fields row, chip participants and a
+ * per-participant exact grid (4-up desktop / 2-up mobile, 40px inputs). The
+ * breadcrumb sits above the card and the logger-only permission-denied state
+ * renders as its own sunken card (badge + message).
+ *
+ * The reference's exact type/spacing values have no token in the frozen token
+ * layer (the reference family/type swap is an accepted deviation — owner waiver
+ * of TKT-ui-010 E1), so the page-local sizes below encode the reference
+ * geometry directly. It is presentation only: no wizard steps, no focus
  * management, no extra round-trips, so the page-load budget (TC-EXP-032) is
  * untouched. Save and abandon (Cancel) sit in one action row.
  */
 
 .edit-expense {
   display: grid;
-  gap: var(--space-5);
-  max-width: var(--layout-max-width);
+  gap: 14px; /* 14px — reference content rhythm */
+  width: 100%;
+  max-width: 35.5rem; /* 568px — reference card width */
   margin-inline: auto;
 }
 
-.edit-expense__title {
-  margin-bottom: 0;
+/* ── Breadcrumb (group / expense / edit) ─────────────────────────────────── */
+
+.edit-expense__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1rem; /* 16px */
 }
 
-/* The single-screen form sits on a raised card, matching the add-expense form;
- * base.css's 32rem cap is widened so amount + payer can sit side by side. */
+.edit-expense__crumb-link {
+  color: var(--color-accent-strong);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.edit-expense__crumb-link:hover {
+  color: var(--color-accent-strong-hover);
+}
+
+.edit-expense__crumb-sep,
+.edit-expense__crumb-mid,
+.edit-expense__crumb-current {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+
 .edit-expense__form {
+  display: grid;
+  gap: 1.125rem; /* 18px — reference card child rhythm */
   width: 100%;
-  max-width: 40rem;
+  max-width: none;
   margin-block: 0;
-  padding: var(--space-5);
+  padding: 1.125rem; /* 18px — reference mobile card padding */
   background-color: var(--color-surface-raised);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Heading ─────────────────────────────────────────────────────────────── */
+
+.edit-expense__heading {
+  display: grid;
+  gap: 0.375rem; /* 6px */
+}
+
+.edit-expense__title {
+  margin: 0;
+  font-size: 1.875rem; /* 30px — reference heading */
+  line-height: 1.18;
+}
+
+.edit-expense__lede {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem; /* 15px */
+  line-height: 1.5; /* 22.5px */
+}
+
+/* ── Core fields (description / amount / payer) ──────────────────────────── */
+
+.edit-expense__core {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px; /* reference field gap */
 }
 
 .edit-expense__field {
   display: grid;
-  gap: var(--space-1);
-}
-
-.edit-expense__row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-4);
-}
-
-@media (max-width: 34rem) {
-  .edit-expense__row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Inline validation errors — smaller than the shared `[role="alert"]` block
- * so they hug their field and never push the action row off-screen. */
-.edit-expense__error {
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-}
-
-.edit-expense__group {
-  display: grid;
-  gap: var(--space-3);
+  gap: 0.4375rem; /* 7px — reference label/control gap */
   min-width: 0;
+}
+
+.edit-expense__label {
+  color: var(--color-text);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+}
+
+.edit-expense__field label {
   margin: 0;
-  padding: var(--space-4);
-  background-color: var(--color-surface-sunken);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
 }
 
-.edit-expense__group legend {
-  padding-inline: var(--space-1);
-  font-family: var(--font-display);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+.edit-expense__field input:not([type='checkbox']):not([type='radio']),
+.edit-expense__field select {
+  width: 100%;
+  max-width: none;
+  height: 2.875rem; /* 46px — reference input height */
+  min-height: 2.875rem;
+  padding: 0 0.875rem; /* 14px */
+  font-size: 0.9375rem; /* 15px */
 }
 
-/* Split type — a pill segmented control; the native radios stay present and
- * keyboard-operable, so no focus trap is introduced. */
-.edit-expense__segmented {
-  display: inline-flex;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-pill);
+/* Inline invalid state — the reference tints the control border red. */
+.edit-expense__field input[aria-invalid='true'],
+.edit-expense__field select[aria-invalid='true'] {
+  border-color: var(--color-danger);
 }
 
-.edit-expense__segmented label {
-  display: inline-flex;
+/* Inline validation — small red text hugging its field, never a box. */
+.edit-expense__field-error {
+  margin: 0;
+  padding: 0;
+  color: var(--color-danger);
+  background-color: transparent;
+  border: 0;
+  font-size: 0.75rem; /* 12px */
+  line-height: 0.9375rem; /* 15px */
+}
+
+/* ── Participants ────────────────────────────────────────────────────────── */
+
+.edit-expense__participants {
+  display: grid;
+  gap: 0.5625rem; /* 9px */
+}
+
+.edit-expense__participants-head {
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
-.edit-expense__segmented label:has(input:checked) {
-  color: var(--color-accent-contrast);
-  background-color: var(--color-accent-soft);
+.edit-expense__selection {
+  color: var(--color-success);
+  font-size: 0.75rem; /* 12px */
+  line-height: 0.9375rem;
 }
 
-/* Participant selection — chips that wrap, prefilled from the stored split. */
 .edit-expense__choices {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
-.edit-expense__choices label {
+.edit-expense__choice {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   margin: 0;
-  padding: var(--space-2) var(--space-3);
+  padding: 8px 12px;
+  color: var(--color-text-muted);
   background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-pill);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  line-height: 1rem;
   cursor: pointer;
 }
 
-.edit-expense__choices label:has(input:checked) {
+/* The native control stays present, keyboard-operable and clickable, stretched
+ * across the chip so Playwright's `.check()` still targets a visible element. */
+.edit-expense__choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.edit-expense__choice:has(input:checked) {
+  color: var(--color-accent-contrast);
   background-color: var(--color-accent-soft);
   border-color: var(--color-accent-strong);
 }
 
+.edit-expense__choice:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.edit-expense__check {
+  display: none;
+  flex: none;
+}
+
+.edit-expense__choice:has(input:checked) .edit-expense__check {
+  display: inline-block;
+}
+
+/* ── Split toggle ────────────────────────────────────────────────────────── */
+
+.edit-expense__split {
+  display: grid;
+  gap: 0.5625rem; /* 9px */
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.edit-expense__split legend {
+  padding: 0;
+}
+
+.edit-expense__segmented {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  padding: 5px;
+  background-color: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+
+.edit-expense__segmented label {
+  position: relative;
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 9px 0;
+  color: var(--color-text-muted);
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  line-height: 1rem;
+  cursor: pointer;
+}
+
+.edit-expense__segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.edit-expense__segmented label:has(input:checked) {
+  color: var(--color-accent-strong);
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
+.edit-expense__segmented label:has(input:focus-visible) {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ── Equal-split hint ────────────────────────────────────────────────────── */
+
+.edit-expense__hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-color: var(--color-nav-text);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4; /* 18.2px */
+}
+
+/* ── Exact amounts ───────────────────────────────────────────────────────── */
+
+.edit-expense__exact-group {
+  display: grid;
+  gap: 10px;
+}
+
+.edit-expense__exact-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.edit-expense__exact-label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+}
+
+.edit-expense__remaining {
+  color: var(--color-danger);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+  white-space: nowrap;
+}
+
+.edit-expense__remaining--settled {
+  color: var(--color-success);
+}
+
 .edit-expense__exact {
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .edit-expense__exact-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 8rem;
-  align-items: center;
-  gap: var(--space-3);
+  gap: 5px;
+  min-width: 0;
 }
 
 .edit-expense__exact-row label {
   margin: 0;
+  color: var(--color-text);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
 }
 
-/* Save (submit) and abandon (Cancel) in one row, so the primary control keeps
- * the add-expense form's placement and the abandon action reads as secondary. */
-.edit-expense__actions {
+.edit-expense__exact-row input:not([type='checkbox']):not([type='radio']) {
+  width: 100%;
+  max-width: none;
+  height: 2.5rem; /* 40px — reference exact input height */
+  min-height: 2.5rem;
+  padding: 0 0.625rem; /* 10px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+.edit-expense__exact-row input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.edit-expense__exact-alert {
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border-color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.4; /* 18.2px */
+}
+
+.edit-expense__alert-icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+/* ── Permission-denied state (iteration-3) ───────────────────────────────── */
+
+.edit-expense__denied {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 1rem; /* 16px — reference denied-card padding */
+  background-color: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.edit-expense__denied-head {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
 }
 
-.edit-expense__submit {
-  min-width: 10rem;
+.edit-expense__denied-label {
+  color: var(--color-text-muted);
+  font-size: 0.75rem; /* 12px */
+  font-weight: 700;
+  line-height: 0.9375rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.edit-expense__denied-badge {
+  flex: none;
+  padding: 4px 9px;
+  color: var(--color-nav-text);
+  background-color: var(--color-accent-soft);
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  line-height: 0.8125rem;
+}
+
+.edit-expense__denied-message {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem; /* 13px */
+  line-height: 1.45;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+
+.edit-expense__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .edit-expense__cancel {
-  text-decoration: none;
+  width: 100%;
+  height: 2.75rem; /* 44px — reference button height */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+.edit-expense__submit {
+  width: 100%;
+  height: 2.75rem; /* 44px — reference button height */
+  min-height: 2.75rem;
+  padding: 0 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
+}
+
+.edit-expense__return {
+  margin: 0;
+  font-size: 0.75rem; /* 12px */
+  line-height: 0.9375rem;
+}
+
+/* Desktop reference proportions (acceptance viewport: 1230px). */
+@media (min-width: 48rem) {
+  .edit-expense__form {
+    padding: 1.625rem; /* 26px — reference desktop card padding */
+  }
+
+  .edit-expense__core {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3-up core fields */
+  }
+
+  .edit-expense__segmented {
+    width: fit-content;
+  }
+
+  .edit-expense__segmented label {
+    flex: none;
+    min-width: 8.875rem; /* 142px — reference option width */
+  }
+
+  .edit-expense__exact {
+    grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4-up exact grid */
+  }
+
+  .edit-expense__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .edit-expense__cancel,
+  .edit-expense__submit {
+    width: auto;
+  }
 }

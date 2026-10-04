@@ -1,6 +1,7 @@
 /**
  * `/groups/:groupId/expenses/:expenseId/edit` — edit-expense form
- * (TKT-exp-006; UC-EXP-002, 03-api-design.md §6 edit-expense row).
+ * (TKT-exp-006; 1:1 restyle TKT-ui-018; UC-EXP-002, 03-api-design.md §6
+ * edit-expense row).
  *
  * The form is a **single screen** (no wizard steps), prefilled from the
  * expense detail (`GET …/expenses/:expenseId`): description, amount, payer,
@@ -9,29 +10,47 @@
  * issues a `PATCH` and returns to the group view, where the updated expense is
  * visible in the ledger.
  *
+ * Structure is frozen by PG-008; the TKT-ui-018 restyle reproduces board 07
+ * "Edit Expense" (file `XzY4HLCoW70yfI9NgeLXqC`; desktop layout `2:25593`,
+ * mobile layout `2:25793`): the group / expense / edit **breadcrumb** above a
+ * 568px (desktop) / fluid (mobile) card carrying the heading + lede, the
+ * three-up / stacked core fields, chip participants with a selection count, the
+ * segmented split toggle, the equal-share hint (or the exact-amounts grid with
+ * a remaining figure), the primary save action with its abandon sibling and a
+ * return note.
+ *
+ * Iteration-3 design-pinned additions (PG-008): the breadcrumb, and the
+ * logger-only **permission-denied state card** — denial is rendered in-page as
+ * a badge + message, never as a redirect. The board's state catalog (prefilled,
+ * exact-split with inline errors, permission-denied) is rendered one state at a
+ * time; the success state is the navigation back to the group ledger.
+ *
  * Affordance enforcement is a UI, not a security, boundary: only the logger
  * sees the entry point to this page (BR-EXP-007's UI aspect). The API itself
  * returns `403 NOT_LOGGER` to any other member, so a hand-typed URL fails
- * closed. Member references are display names only (FR-ACC-008).
+ * closed — presented here as the in-page permission-denied card. Member
+ * references are display names only (FR-ACC-008).
  *
- * Styling (TKT-ui-008) matches the add-expense sibling via the shared
- * `tokens.css` custom properties and `base.css` classes: the same
- * single-screen card layout, segmented split-type control and participant
- * chips, with a dedicated `EditExpensePage.css`. Save submits; abandon
- * returns to the group ledger (PG-008). This is presentation only — the
- * submit payload, validation and route behaviour are unchanged.
+ * Copy that existing e2e TCs assert is preserved even where the reference
+ * differs (the ticket's "keep the string, route the delta back" rule): the
+ * payer label stays **Payer** (`getByLabel('Payer')`) and the submit stays
+ * **Save changes** (`getByRole('button', { name: 'Save changes' })`). The
+ * exact-amounts group keeps the accessible name **Exact amounts**. This is
+ * presentation only — the submit payload, validation and route behaviour are
+ * unchanged.
  */
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FIELD_LIMITS, type EditExpenseRequestDto, type MemberDto, type SplitType } from 'shared';
+import { FIELD_LIMITS, type EditExpenseRequestDto, type Kurus, type MemberDto, type SplitType } from 'shared';
 
 import './EditExpensePage.css';
 
 import { expensesApi } from '../api/expenses';
 import { groupsApi } from '../api/groups';
 import { ApiError } from '../api/errors';
-import { formatKurus, parseKurus, type Kurus } from '../money';
+import { useAuth } from '../auth/AuthContext';
+import { formatKurus, parseKurus } from '../money';
 import { SPA_ROUTES } from '../routes';
 
 interface FieldErrors {
@@ -42,13 +61,71 @@ interface FieldErrors {
   exact?: string;
 }
 
+function InfoIcon() {
+  return (
+    <svg
+      className="edit-expense__alert-icon"
+      viewBox="0 0 17 17"
+      width="17"
+      height="17"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="8.5" cy="8.5" r="7" fill="none" stroke="currentColor" strokeWidth="1" />
+      <path d="M8.5 7.6v4.6M8.5 4.7v.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <svg
+      className="edit-expense__alert-icon"
+      viewBox="0 0 17 17"
+      width="17"
+      height="17"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="8.5" cy="8.5" r="7" fill="none" stroke="currentColor" strokeWidth="1" />
+      <path d="M8.5 4.7v4.6M8.5 12.2v.2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      className="edit-expense__check"
+      viewBox="0 0 13 13"
+      width="13"
+      height="13"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M2.4 6.9 5.1 9.6 10.6 4.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function EditExpensePage() {
   const { groupId, expenseId } = useParams<{ groupId: string; expenseId: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [members, setMembers] = useState<MemberDto[]>([]);
+  const [groupName, setGroupName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [denied, setDenied] = useState(false);
+  const [loggerName, setLoggerName] = useState<string | null>(null);
 
   const [description, setDescription] = useState('');
   const [amountText, setAmountText] = useState('');
@@ -65,6 +142,7 @@ export function EditExpensePage() {
     // Reset per-expense state: a param-only transition must not display the
     // previous expense's values (PR #17 K-2 / S-1; review exp-005 C-2).
     setMembers([]);
+    setGroupName(null);
     setDescription('');
     setAmountText('');
     setPayerId('');
@@ -75,6 +153,8 @@ export function EditExpensePage() {
     setSubmitError(null);
     setLoading(true);
     setLoadError(null);
+    setDenied(false);
+    setLoggerName(null);
 
     if (groupId === undefined || expenseId === undefined) {
       setLoadError('Missing group or expense id.');
@@ -84,16 +164,42 @@ export function EditExpensePage() {
     let cancelled = false;
     void (async () => {
       try {
-        const [membersResponse, expenseResponse] = await Promise.all([
+        // Members gate the form; the group name only dresses the breadcrumb, so
+        // it is best-effort and never blocks the single-screen form.
+        const [membersResult, expenseResult, groupResult] = await Promise.allSettled([
           groupsApi.members(groupId),
           expensesApi.detail(groupId, expenseId),
+          groupsApi.detail(groupId),
         ]);
         if (cancelled) {
           return;
         }
-        const { expense } = expenseResponse;
-        setMembers(membersResponse.members);
+        if (groupResult.status === 'fulfilled') {
+          setGroupName(groupResult.value.group.name);
+        }
+        if (expenseResult.status === 'rejected') {
+          const reason: unknown = expenseResult.reason;
+          if (reason instanceof ApiError && (reason.code === 'NOT_LOGGER' || reason.status === 403)) {
+            // Iteration-3 design-pinned addition: denial is an in-page state.
+            setDenied(true);
+            return;
+          }
+          throw reason;
+        }
+        if (membersResult.status === 'rejected') {
+          throw membersResult.reason;
+        }
+        const { expense } = expenseResult.value;
+        setMembers(membersResult.value.members);
         setDescription(expense.description);
+        // The detail read is open to any group member, but PG-008 restricts
+        // editing to the logger (BR-EXP-007). A non-logger arriving at this
+        // route sees the in-page permission-denied state, never the form.
+        if (user !== null && expense.logger.id !== user.id) {
+          setLoggerName(expense.logger.displayName);
+          setDenied(true);
+          return;
+        }
         setAmountText(formatKurus(expense.amountKurus as Kurus));
         setPayerId(expense.payer.id);
         setParticipantIds(expense.shares.map((share) => share.participant.id));
@@ -121,7 +227,7 @@ export function EditExpensePage() {
     return () => {
       cancelled = true;
     };
-  }, [groupId, expenseId]);
+  }, [groupId, expenseId, user]);
 
   function toggleParticipant(memberId: string, checked: boolean) {
     setParticipantIds((current) =>
@@ -221,179 +327,277 @@ export function EditExpensePage() {
     }
   }
 
+  const allSelected = members.length > 0 && participantIds.length === members.length;
+  const parsedAmount = parseKurus(amountText);
+  const shareKurus =
+    parsedAmount.ok && participantIds.length > 0
+      ? Math.floor(parsedAmount.value / participantIds.length)
+      : 0;
+  const exactSum = participantIds.reduce((sum, id) => {
+    const raw = (exactTexts[id] ?? '').trim();
+    const parsed = parseKurus(raw === '' ? '0' : raw);
+    return sum + (parsed.ok ? parsed.value : 0);
+  }, 0);
+  const remainingKurus = parsedAmount.ok ? parsedAmount.value - exactSum : 0;
+
+  const breadcrumbExpense = description.trim() === '' ? 'Expense' : description;
+
   return (
     <section className="edit-expense">
-      <h1 className="edit-expense__title">Edit expense</h1>
-      {loadError !== null && <p role="alert">{loadError}</p>}
       {loading ? (
         <p>Loading expense…</p>
-      ) : loadError === null ? (
-        <form onSubmit={onSubmit} noValidate aria-label="Edit an expense" className="edit-expense__form">
-          {submitError !== null && <p role="alert">{submitError}</p>}
+      ) : (
+        <>
+          <nav className="edit-expense__breadcrumb" aria-label="Breadcrumb">
+            <Link className="edit-expense__crumb-link" to={SPA_ROUTES.groupView(groupId ?? '')}>
+              {groupName ?? 'Group'}
+            </Link>
+            <span className="edit-expense__crumb-sep" aria-hidden="true">
+              /
+            </span>
+            <span className="edit-expense__crumb-mid">{breadcrumbExpense}</span>
+            <span className="edit-expense__crumb-sep" aria-hidden="true">
+              /
+            </span>
+            <span className="edit-expense__crumb-current" aria-current="page">
+              Edit
+            </span>
+          </nav>
 
-          <div className="edit-expense__field">
-            <label htmlFor="expense-description">Description</label>
-            <input
-              id="expense-description"
-              name="description"
-              type="text"
-              maxLength={FIELD_LIMITS.description.maxLength}
-              value={description}
-              onChange={(event) => {
-                setDescription(event.target.value);
-              }}
-            />
-            {errors.description !== undefined && (
-              <p className="edit-expense__error" data-testid="description-error" role="alert">
-                {errors.description}
+          {denied ? (
+            <div className="edit-expense__denied" role="alert">
+              <div className="edit-expense__denied-head">
+                <span className="edit-expense__denied-label">Permission</span>
+                <span className="edit-expense__denied-badge">Author only</span>
+              </div>
+              <p className="edit-expense__denied-message">
+                {loggerName !== null
+                  ? `Only ${loggerName}, the expense author, can reach this screen. Other members do not see the Edit action.`
+                  : 'Only the member who logged this expense can edit it. Other members do not see the Edit action.'}
               </p>
-            )}
-          </div>
+            </div>
+          ) : loadError !== null ? (
+            <p role="alert">{loadError}</p>
+          ) : (
+            <form
+              onSubmit={onSubmit}
+              noValidate
+              aria-label="Edit an expense"
+              className="edit-expense__form"
+            >
+              {submitError !== null && <p role="alert">{submitError}</p>}
 
-          <div className="edit-expense__row">
-            <div className="edit-expense__field">
-              <label htmlFor="expense-amount">Amount</label>
-              <input
-                id="expense-amount"
-                name="amount"
-                type="text"
-                inputMode="decimal"
-                value={amountText}
-                onChange={(event) => {
-                  setAmountText(event.target.value);
-                }}
-              />
-              {errors.amount !== undefined && (
-                <p className="edit-expense__error" data-testid="amount-error" role="alert">
-                  {errors.amount}
+              <div className="edit-expense__heading">
+                <h1 className="edit-expense__title">Edit expense</h1>
+                <p className="edit-expense__lede">
+                  Update the details below. Changes will be marked as edited.
                 </p>
-              )}
-            </div>
+              </div>
 
-            <div className="edit-expense__field">
-              <label htmlFor="expense-payer">Payer</label>
-              <select
-                id="expense-payer"
-                name="payer"
-                value={payerId}
-                onChange={(event) => {
-                  setPayerId(event.target.value);
-                }}
-              >
-                {members.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.displayName}
-                  </option>
-                ))}
-              </select>
-              {errors.payer !== undefined && (
-                <p className="edit-expense__error" data-testid="payer-error" role="alert">
-                  {errors.payer}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <fieldset className="edit-expense__group">
-            <legend>Split type</legend>
-            <div className="edit-expense__segmented">
-              <label>
-                <input
-                  type="radio"
-                  name="splitType"
-                  value="EQUAL"
-                  checked={splitType === 'EQUAL'}
-                  onChange={() => {
-                    setSplitType('EQUAL');
-                  }}
-                />
-                Equal
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="splitType"
-                  value="EXACT"
-                  checked={splitType === 'EXACT'}
-                  onChange={() => {
-                    setSplitType('EXACT');
-                  }}
-                />
-                Exact
-              </label>
-            </div>
-          </fieldset>
-
-          <fieldset className="edit-expense__group">
-            <legend>Participants</legend>
-            <div className="edit-expense__choices">
-              {members.map((member) => (
-                <label key={member.id}>
+              <div className="edit-expense__core">
+                <div className="edit-expense__field">
+                  <label htmlFor="expense-description">Description</label>
                   <input
-                    type="checkbox"
-                    data-testid="participant-checkbox"
-                    checked={participantIds.includes(member.id)}
+                    id="expense-description"
+                    name="description"
+                    type="text"
+                    maxLength={FIELD_LIMITS.description.maxLength}
+                    aria-invalid={errors.description !== undefined}
+                    value={description}
                     onChange={(event) => {
-                      toggleParticipant(member.id, event.target.checked);
+                      setDescription(event.target.value);
                     }}
                   />
-                  {member.displayName}
-                </label>
-              ))}
-            </div>
-            {errors.participants !== undefined && (
-              <p className="edit-expense__error" data-testid="participants-error" role="alert">
-                {errors.participants}
-              </p>
-            )}
-          </fieldset>
+                  {errors.description !== undefined && (
+                    <p
+                      className="edit-expense__field-error"
+                      data-testid="description-error"
+                      role="alert"
+                    >
+                      {errors.description}
+                    </p>
+                  )}
+                </div>
 
-          {splitType === 'EXACT' && (
-            <fieldset className="edit-expense__group">
-              <legend>Exact amounts</legend>
-              <div className="edit-expense__exact">
-                {members
-                  .filter((member) => participantIds.includes(member.id))
-                  .map((member) => (
-                    <div className="edit-expense__exact-row" key={member.id}>
-                      <label htmlFor={`exact-${member.id}`}>{member.displayName}</label>
+                <div className="edit-expense__field">
+                  <label htmlFor="expense-amount">Amount in ₺</label>
+                  <input
+                    id="expense-amount"
+                    name="amount"
+                    type="text"
+                    inputMode="decimal"
+                    aria-invalid={errors.amount !== undefined}
+                    value={amountText}
+                    onChange={(event) => {
+                      setAmountText(event.target.value);
+                    }}
+                  />
+                  {errors.amount !== undefined && (
+                    <p className="edit-expense__field-error" data-testid="amount-error" role="alert">
+                      {errors.amount}
+                    </p>
+                  )}
+                </div>
+
+                <div className="edit-expense__field">
+                  <label htmlFor="expense-payer">Payer</label>
+                  <select
+                    id="expense-payer"
+                    name="payer"
+                    aria-invalid={errors.payer !== undefined}
+                    value={payerId}
+                    onChange={(event) => {
+                      setPayerId(event.target.value);
+                    }}
+                  >
+                    {members.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.displayName}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.payer !== undefined && (
+                    <p className="edit-expense__field-error" data-testid="payer-error" role="alert">
+                      {errors.payer}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="edit-expense__participants">
+                <div className="edit-expense__participants-head">
+                  <span className="edit-expense__label">Participants</span>
+                  <span className="edit-expense__selection">
+                    {allSelected
+                      ? `All ${members.length} selected`
+                      : `${participantIds.length} selected`}
+                  </span>
+                </div>
+                <div className="edit-expense__choices">
+                  {members.map((member) => (
+                    <label className="edit-expense__choice" key={member.id}>
                       <input
-                        id={`exact-${member.id}`}
-                        data-testid={`exact-${member.id}`}
-                        type="text"
-                        inputMode="decimal"
-                        value={exactTexts[member.id] ?? ''}
+                        type="checkbox"
+                        data-testid="participant-checkbox"
+                        checked={participantIds.includes(member.id)}
                         onChange={(event) => {
-                          setExactTexts((current) => ({
-                            ...current,
-                            [member.id]: event.target.value,
-                          }));
+                          toggleParticipant(member.id, event.target.checked);
                         }}
                       />
-                    </div>
+                      <CheckIcon />
+                      {member.id === user?.id ? `${member.displayName} (me)` : member.displayName}
+                    </label>
                   ))}
+                </div>
+                {errors.participants !== undefined && (
+                  <p className="edit-expense__field-error" data-testid="participants-error" role="alert">
+                    {errors.participants}
+                  </p>
+                )}
               </div>
-              {errors.exact !== undefined && (
-                <p className="edit-expense__error" data-testid="exact-error" role="alert">
-                  {errors.exact}
+
+              <fieldset className="edit-expense__split">
+                <legend className="edit-expense__label">Split</legend>
+                <div className="edit-expense__segmented">
+                  <label>
+                    <input
+                      type="radio"
+                      name="splitType"
+                      value="EQUAL"
+                      checked={splitType === 'EQUAL'}
+                      onChange={() => {
+                        setSplitType('EQUAL');
+                      }}
+                    />
+                    Equal
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="splitType"
+                      value="EXACT"
+                      checked={splitType === 'EXACT'}
+                      onChange={() => {
+                        setSplitType('EXACT');
+                      }}
+                    />
+                    Exact
+                  </label>
+                </div>
+              </fieldset>
+
+              {splitType === 'EQUAL' && (
+                <p className="alert alert--info edit-expense__hint">
+                  <InfoIcon />
+                  <span>
+                    Equal split: ₺{formatKurus(shareKurus as Kurus)} each for {participantIds.length}{' '}
+                    participants.
+                  </span>
                 </p>
               )}
-            </fieldset>
-          )}
 
-          <div className="edit-expense__actions">
-            <button type="submit" className="edit-expense__submit" disabled={submitting}>
-              Save changes
-            </button>
-            <Link
-              className="btn btn--secondary edit-expense__cancel"
-              to={SPA_ROUTES.groupView(groupId ?? '')}
-            >
-              Cancel
-            </Link>
-          </div>
-        </form>
-      ) : null}
+              {splitType === 'EXACT' && (
+                <div className="edit-expense__exact-group" role="group" aria-label="Exact amounts">
+                  <div className="edit-expense__exact-head">
+                    <span className="edit-expense__exact-label">Exact amounts per participant</span>
+                    <span
+                      className={
+                        remainingKurus === 0
+                          ? 'edit-expense__remaining edit-expense__remaining--settled'
+                          : 'edit-expense__remaining'
+                      }
+                    >
+                      ₺{formatKurus(Math.abs(remainingKurus) as Kurus)} remaining
+                    </span>
+                  </div>
+                  <div className="edit-expense__exact">
+                    {members
+                      .filter((member) => participantIds.includes(member.id))
+                      .map((member) => (
+                        <div className="edit-expense__exact-row" key={member.id}>
+                          <label htmlFor={`exact-${member.id}`}>{member.displayName}</label>
+                          <input
+                            id={`exact-${member.id}`}
+                            data-testid={`exact-${member.id}`}
+                            type="text"
+                            inputMode="decimal"
+                            aria-invalid={errors.exact !== undefined}
+                            value={exactTexts[member.id] ?? ''}
+                            onChange={(event) => {
+                              setExactTexts((current) => ({
+                                ...current,
+                                [member.id]: event.target.value,
+                              }));
+                            }}
+                          />
+                        </div>
+                      ))}
+                  </div>
+                  {errors.exact !== undefined && (
+                    <p className="alert edit-expense__exact-alert" data-testid="exact-error" role="alert">
+                      <AlertIcon />
+                      <span>{errors.exact}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="edit-expense__actions">
+                <Link
+                  className="btn btn--secondary edit-expense__cancel"
+                  to={SPA_ROUTES.groupView(groupId ?? '')}
+                >
+                  Cancel
+                </Link>
+                <button type="submit" className="edit-expense__submit" disabled={submitting}>
+                  Save changes
+                </button>
+              </div>
+              <p className="edit-expense__return muted">Save returns to Expenses.</p>
+            </form>
+          )}
+        </>
+      )}
     </section>
   );
 }
