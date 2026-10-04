@@ -1,6 +1,7 @@
 # TKT-ui-011: App shell — responsive chrome per the references (PG-001)
 
-- Status: todo
+- Status: in-review
+- PR: https://github.com/sarperim/settleup/pull/54 (base `dev`)
 - Size: M
 - Scope:
   - Modify: `apps/web/src/layout/RootLayout.tsx` + colocated `RootLayout.css`
@@ -27,3 +28,37 @@ Extraction path for the coder:
 - Image/vector export (brand mark): `GET https://api.figma.com/v1/images/XzY4HLCoW70yfI9NgeLXqC?ids=<nodeId>&format=svg|png&scale=2` returns asset URLs.
 
 **Unblocks:** TKT-ui-011 (this ticket) and TKT-ui-014…019 (each can extract its board the same way). The prior MCP-quota blocker is closed.
+
+## Implementation (2026-10-04) — PR #54
+
+Extracted the four "Top bar" frames via the Figma REST API and landed the
+chrome in the two scoped files. Measurements taken programmatically at the
+acceptance viewports (`header.getBoundingClientRect`):
+
+| Viewport / variant | Design | Landed |
+|---|---|---|
+| Desktop 1230 (both variants) | 72px, pad 32px, mark 30px, name 23/700, nav gap 22, pill 34px | 72 / 32 / 30 / 23-700 / 22 / 34 |
+| Mobile 390 authenticated | 94px, pad 18×14, mark 27px, name 20/700, nav gap 16, pill 29px | 94 / 18×14 / 27 / 20-700 / 16 / 29 |
+| Mobile 390 anonymous | 81px, single 16px nav row | 81 / 16 |
+
+- Display name sits on the brand row (top-right) on mobile and at the start of
+  the right-hand nav group on desktop, per the references; never an email.
+- Nav weights per the frozen frames: auth Groups 600 / Change password 400 /
+  user 700 / Log out 700; anon current link 700 / other 600.
+- No horizontal scroll at 390px (`scrollWidth === clientWidth === 390`).
+- Colours resolve only through `tokens.css` (`design-tokens.spec.ts` green).
+
+Only `apps/web/src/layout/RootLayout.tsx` + `RootLayout.css` changed; no spec,
+route, page, token, or `figma/` file touched.
+
+**Evidence:** web-unit 92/92; unit+web-unit 195/195; typecheck clean; eslint
+clean; build 92.81 KB gz JS / 4.19 KB gz CSS. Integration + Playwright e2e
+cannot run in this environment (no PostgreSQL) — pre-existing baseline.
+Before/after screenshots: evidence-only branch `tkt-ui-011-screenshots`,
+embedded in PR #54.
+
+**Flagged:** (1) reference font families (Nunito Sans/Inter) remain the waived
+shipped pairing (TKT-ui-010 E1); (2) the brand mark is a plain solid circle per
+the export, implemented as CSS (no asset file); (3) the reference shows no
+route-active nav pill, so the previous `.active` pill styling was removed — no
+test asserts it.
