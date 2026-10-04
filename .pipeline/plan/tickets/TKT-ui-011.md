@@ -1,6 +1,6 @@
 # TKT-ui-011: App shell — responsive chrome per the references (PG-001)
 
-- Status: blocked
+- Status: todo
 - Size: M
 - Scope:
   - Modify: `apps/web/src/layout/RootLayout.tsx` + colocated `RootLayout.css`
@@ -17,17 +17,13 @@
 - Dependencies: TKT-ui-010 (refreshed tokens)
 - Parallel group: none — lands before the page tickets: every page screenshot includes the shell, so page verification is only meaningful against the new chrome
 
-## Blocker (2026-10-03) — Figma MCP read quota exhausted
+## Blocker RESOLVED (2026-10-04) — Figma REST API via owner PAT
 
-Dispatched coder stopped before touching any file (worktree clean, no PR). **The Figma MCP read quota is exhausted** — every read tool (`get_design_context`, `get_metadata`, `get_screenshot`) returns *"You've reached the Figma MCP tool call limit on the Starter plan."* Confirmed independently by the orchestrator. Cause: plan `Sarp's team`, tier `starter`, seat `View` — the official limit is ~**20 tool calls per month**, consumed by the earlier iteration-3 tickets (ui-010/012/013).
+The Figma MCP read quota is exhausted, but the owner supplied a **Figma Personal Access Token**, stored at **`/tmp/opencode/figma_pat.txt`** (NOT in the repo — do not commit, copy, or echo it into project files). The token authenticates against the **Figma REST API**, which is not subject to the MCP quota — verified by the orchestrator (`GET /v1/me` and `GET /v1/files/XzY4HLCoW70yfI9NgeLXqC/nodes?ids=2:24556` both return data).
 
-No non-MCP fallback exists: the frozen `figma/*.png` snapshots cannot be used because this model has **no image input**; no design-context output for the top-bar nodes was saved to the repo or `/tmp`; and the MCP is OAuth-only (no PAT/REST fallback under the filesystem/CSP boundary). The brand-mark asset is only obtainable via the MCP.
+Extraction path for the coder:
+- `X-Figma-Token: $(tr -d '[:space:]' < /tmp/opencode/figma_pat.txt)`
+- Node JSON (geometry, fills, typography, padding, text): `GET https://api.figma.com/v1/files/XzY4HLCoW70yfI9NgeLXqC/nodes?ids=<nodeId>` — read `nodes[<id>].document` (absoluteBoundingBox, fills, fontSize/fontFamily/fontWeight/lineHeight, cornerRadius, itemSpacing, padding*, characters).
+- Image/vector export (brand mark): `GET https://api.figma.com/v1/images/XzY4HLCoW70yfI9NgeLXqC?ids=<nodeId>&format=svg|png&scale=2` returns asset URLs.
 
-**Impact:** TKT-ui-011 cannot be implemented to the 1:1 contract; and TKT-ui-014…019 (P-12 remaining) are blocked too — each needs design-context reads for its board.
-
-**Unblocks via an owner action (not an agent call):**
-1. Restore MCP read quota — upgrade the Figma seat to Dev/Full (≈200/day) or the plan; or wait for the monthly reset; **or**
-2. Provide a Figma Personal Access Token (or a saved design-context dump for the top-bar + page nodes) so the coder can use the REST API without MCP quota; **or**
-3. Explicitly re-scope iteration 3 to "structural only, no 1:1 fidelity/brand mark" — a scope reduction to be recorded in the plan before dispatch.
-
-No structural contradiction with PG-001 was found — this is purely a tooling/access blocker.
+**Unblocks:** TKT-ui-011 (this ticket) and TKT-ui-014…019 (each can extract its board the same way). The prior MCP-quota blocker is closed.
