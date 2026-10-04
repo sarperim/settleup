@@ -1,6 +1,7 @@
 # TKT-ui-010: Iteration-3 foundation — reference-driven token refresh & shared styles
 
-- Status: in-review
+- Status: done
+- PR: https://github.com/sarperim/settleup/pull/49 (base `dev`, merged — `dd41638`; E1 typography waived by owner)
 - Size: M
 - Scope:
   - Modify: `apps/web/src/styles/tokens.css`, `apps/web/src/styles/base.css`, `apps/web/src/styles/fonts.css` (only if the references change typography or font family)
